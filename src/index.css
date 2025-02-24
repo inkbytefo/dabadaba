@@ -1,0 +1,86 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    
+    --messenger-primary: 262 84% 75%;
+    --messenger-secondary: 262 84% 67%;
+    --messenger-accent: 199 95% 49%;
+    
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 262 84% 75%;
+    --primary-foreground: 240 5.9% 10%;
+    
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 0 0% 98%;
+    
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased overflow-x-hidden font-inter;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--messenger-primary) / 0.1) 100%);
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/5 border border-white/10;
+  }
+  
+  .message-bubble {
+    @apply relative rounded-2xl p-3 transition-all duration-200;
+  }
+  
+  .message-bubble-in {
+    @apply bg-messenger-primary/20 text-white;
+  }
+  
+  .message-bubble-out {
+    @apply bg-messenger-accent/20 text-white;
+  }
+
+  .status-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+  }
+
+  .status-dot-online {
+    @apply bg-green-500;
+  }
+
+  .status-dot-away {
+    @apply bg-yellow-500;
+  }
+
+  .status-dot-offline {
+    @apply bg-gray-500;
+  }
+}
+

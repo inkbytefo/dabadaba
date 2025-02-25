@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,35 +7,37 @@
 
 @layer base {
   :root {
-    --background: 250, 249, 246;
-    --foreground: 85, 67, 54;
-    
-    --card: 255, 255, 255;
-    --card-foreground: 85, 67, 54;
-    
-    --messenger-primary: 148, 122, 97;
-    --messenger-secondary: 214, 203, 194;
-    --messenger-accent: 140, 110, 90;
-    
-    --popover: 255, 255, 255;
-    --popover-foreground: 51, 51, 51;
-    
-    --primary: 140, 110, 90;
-    --primary-foreground: 255, 255, 255;
-    
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 85, 67, 54;
-    
-    --muted: 245, 243, 239;
-    --muted-foreground: 136, 121, 110;
-    
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 255, 255, 255;
-    
-    --border: 238, 238, 238;
-    --input: 245, 243, 239;
-    --ring: 140, 110, 90;
-    --radius: 0.75rem;
+    --background: 221 28% 11%; /* #151A25 - Eerie Black */
+    --foreground: 0 0% 88%;   /* #E0E0E0 - Light Gray */
+
+    --card: 221 28% 11%;
+    --card-foreground: 0 0% 100%;
+
+    --messenger-primary: 202 20% 30%;  /* #3D505B - Outer Space */
+    --messenger-secondary: 210 4% 38%; /* #5D6165 - Granite Gray */
+    --messenger-accent: 202 20% 30%;  /* #3D505B - Outer Space */
+
+    --popover: 221 28% 11%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 202 20% 30%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 235 7% 29%;  /* #454650 - Outer Space */
+    --secondary-foreground: 210 4% 38%;
+
+    --muted: 0 4% 25%;         /* #413C3C - Black Olive */
+    --muted-foreground: 210 10% 65%; /* #9CA3AF - Light Granite Gray */
+
+    --border: 0 4% 25%;      /* #413C3C - Black Olive */
+    --input: 235 7% 29%;     /* #454650 - Outer Space */
+    --ring: 202 20% 30%;      /* #3D505B - Outer Space */
+
+    --status-online: 141 69% 45%;   /* #22C55E - Live green */
+    --status-away: 36 88% 58%;     /* #F59E0B - Orange */
+    --status-offline: 240 11% 44%;  /* #6B7280 - Neutral gray */
+
+    --radius: 0.5rem;
   }
 }
 
@@ -42,82 +45,68 @@
   * {
     @apply border-border;
   }
-  
+
   body {
-    font-family: 'Merriweather', serif;
-    @apply bg-background text-foreground antialiased overflow-x-hidden font-serif;
-    background-color: hsl(var(--background));
+    @apply bg-background text-foreground antialiased font-sans;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-semibold;
+  }
+
+  h1 { @apply text-3xl font-bold; }
+  h2 { @apply text-xl font-bold; }
+  h3 { @apply font-bold; }
+  h4 { @apply font-bold; }
+  h5 { @apply font-bold; }
+  h6 { @apply font-bold; }
+  p { @apply text-base; }
 }
 
-@layer base {
-  .light {
-    --background: 250, 249, 246;
-    --foreground: 85, 67, 54;
-  }
-
-  .dark {
-    --background: 20, 20, 20;
-    --foreground: 255, 255, 255;
-    
-    --card: 30, 30, 30;
-    --card-foreground: 255, 255, 255;
-    
-    --messenger-primary: 148, 122, 97;
-    --messenger-secondary: 40, 40, 40;
-    --messenger-accent: 140, 110, 90;
-    
-    --popover: 30, 30, 30;
-    --popover-foreground: 255, 255, 255;
-    
-    --primary: 140, 110, 90;
-    --primary-foreground: 255, 255, 255;
-    
-    --secondary: 30, 30, 30;
-    --secondary-foreground: 255, 255, 255;
-    
-    --muted: 40, 40, 40;
-    --muted-foreground: 160, 160, 160;
-    
-    --accent: 140, 110, 90;
-    --accent-foreground: 255, 255, 255;
-    
-    --border: 40, 40, 40;
-    --input: 30, 30, 30;
-    --ring: 140, 110, 90;
-  }
+@layer components {
+  /* Button Styles */
+  .btn { @apply px-4 py-2 rounded-lg bg-messenger-primary text-foreground hover:bg-messenger-primary/80 transition-colors; }
 }
 
 @layer utilities {
-  .glass-panel rounded-3xl {
-    @apply backdrop-blur-xl bg-white/5 border border-white/10;
-  }
-  
-  .message-bubble {
-    @apply relative rounded-3xl p-3 transition-all duration-200;
-  }
-  
-  .message-bubble-in {
-    @apply bg-messenger-primary/20 text-foreground;
-  }
-  
-  .message-bubble-out {
-    @apply bg-messenger-accent/20 text-foreground;
-  }
+  /* Layout Utilities */
+  .three-panel-layout { @apply grid grid-cols-[280px_1fr_280px] min-h-screen;}
+  .left-panel { @apply bg-background border-r border-border/50 p-6;}
+  .center-panel { @apply bg-background-secondary; }
+  .right-panel { @apply bg-background border-l border-border/50 p-6;}
 
-  .status-dot {
-    @apply w-2.5 h-2.5 rounded-full;
-  }
+  /* Message Bubble Styles */
+  .message-bubble { @apply relative p-4 max-w-[80%] animate-message-in my-3 rounded-xl shadow-sm; }
+  .message-bubble-out { @apply bg-messenger-primary/20 text-foreground ml-auto; }
+  .message-bubble-in { @apply bg-messenger-secondary/10 text-foreground; }
 
-  .status-dot-online {
-    @apply bg-green-500;
-  }
+  /* Chat Input Styles */
+  .chat-input { @apply w-full px-4 py-3 bg-background rounded-lg border border-border/50 focus:ring-2 focus:ring-messenger-primary focus:border-transparent focus:outline-none; }
+  .chat-input::placeholder { @apply text-muted-foreground/70; }
+  .chat-input:focus { @apply ring-2 ring-messenger-primary shadow-md; }
 
-  .status-dot-away {
-    @apply bg-yellow-500;
-  }
+  /* Status Indicator Styles */
+  .status-indicator { @apply w-2.5 h-2.5 rounded-full animate-status-change animate-pulse; }
+  .status-online { @apply bg-status-online; }
+  .status-away { @apply bg-status-away; }
+  .status-offline { @apply bg-status-offline; }
 
-  .status-dot-offline {
-    @apply bg-gray-500;
+  /* Navigation Item Styles */
+  .nav-item { @apply flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-messenger-primary/20 hover:shadow-md active:bg-messenger-primary/30 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-messenger-primary focus:ring-offset-2 focus:ring-offset-background; }
+  .nav-item:focus-visible { @apply outline-none ring-2 ring-messenger-primary ring-offset-2 ring-offset-background; }
+  .nav-item-active { @apply bg-messenger-primary/30; }
+
+  /* Collapsible Panel Styles */
+  .collapsible-panel { @apply transition-all duration-500 ease-in-out; }
+  .collapsible-panel-collapsed { @apply w-16; }
+
+  /* Glass Panel Style */
+  .glass-panel { @apply backdrop-blur-xl bg-background/80 border border-border/50 rounded-lg; }
+
+  /* Animations */
+  @keyframes panel-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(0); }
   }
+  .animate-panel-slide { animation: panel-slide 0.5s ease-out; }
 }

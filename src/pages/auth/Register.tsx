@@ -72,13 +72,13 @@ const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-red-500 py-12">
-      <Card className="w-full max-w-md space-y-6 bg-zinc-800 border border-zinc-700 rounded-2xl shadow-xl p-8">
+    <div className="flex min-h-screen items-center justify-center bg-background py-12 px-4">
+      <Card className="w-full max-w-md space-y-6 glass-panel border-border/50 rounded-2xl shadow-2xl p-8">
         <div className="flex flex-col items-center gap-6">
-          <div className="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center">
+          <div className="w-20 h-20 bg-messenger-primary rounded-full flex items-center justify-center">
             <span className="text-3xl font-bold text-white">M</span>
           </div>
-          <h2 className="text-2xl font-semibold text-center text-white">Create Account</h2>
+          <h2 className="text-2xl font-semibold text-center text-foreground">Create Account</h2>
         </div>
 
         <form onSubmit={handleEmailSignUp} className="mt-6 space-y-6">
@@ -90,9 +90,9 @@ const Register = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Username"
                 required
-                className="rounded-xl border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400 focus-visible:ring-2 focus-visible:ring-yellow-500 h-12"
+                className="chat-input h-12 text-base"
               />
-              <p className="mt-2 text-sm text-zinc-400">
+              <p className="mt-2 text-sm text-messenger-secondary">
                 Choose a unique username (3-20 characters, letters, numbers, and underscores only)
               </p>
             </div>
@@ -102,7 +102,7 @@ const Register = () => {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
               required
-              className="rounded-xl border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400 focus-visible:ring-2 focus-visible:ring-yellow-500 h-12"
+              className="chat-input h-12 text-base"
             />
             <div>
               <Input
@@ -111,9 +111,9 @@ const Register = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 required
-                className="rounded-xl border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400 focus-visible:ring-2 focus-visible:ring-yellow-500 h-12"
+                className="chat-input h-12 text-base"
               />
-              <p className="mt-2 text-sm text-zinc-400">
+              <p className="mt-2 text-sm text-messenger-secondary">
                 Password must be at least 6 characters long
               </p>
             </div>
@@ -122,14 +122,14 @@ const Register = () => {
           <div className="space-y-4 pt-2">
             <Button 
               type="submit" 
-              className="w-full rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-semibold h-12" 
+              className="w-full rounded-lg bg-messenger-primary hover:bg-messenger-primary/90 text-white font-semibold h-12" 
               disabled={loading}
             >
               {loading ? "Creating account..." : "Create Account"}
             </Button>
             <Button
               type="button"
-              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700 font-semibold h-12"
+              className="w-full rounded-lg border border-border bg-background-secondary text-foreground hover:bg-messenger-primary/10 font-semibold h-12"
               onClick={() => navigate("/auth")}
               disabled={loading}
             >

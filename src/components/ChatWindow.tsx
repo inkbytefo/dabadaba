@@ -6,7 +6,7 @@ import { MessageContent } from "./MessageContent";
 import { TypingIndicator } from "./TypingIndicator";
 import { MediaUpload } from "./MediaUpload";
 import { ReadReceipt } from "./ReadReceipt";
-import { PaperclipIcon, X, Search, Pin, PinOff } from "lucide-react";
+import { PaperclipIcon, X, Search, Pin, PinOff, Send, Smile } from "lucide-react";
 import {
   addDoc,
   collection,
@@ -14,11 +14,9 @@ import {
   where,
   orderBy,
   onSnapshot,
-  or,
   serverTimestamp,
   updateDoc,
   doc,
-  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Message as MessageType } from "@/types/models";
@@ -37,7 +35,7 @@ export const ChatWindow = () => {
   const [pinnedMessages, setPinnedMessages] = useState<MessageType[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom when new messages arrive
+  // Existing useEffects and handlers...
   useEffect(() => {
     if (scrollAreaRef.current) {
       const scrollArea = scrollAreaRef.current;
@@ -64,19 +62,17 @@ export const ChatWindow = () => {
     }
   }, [currentUserId]);
 
-  // Filter pinned messages
   useEffect(() => {
     const pinned = messages.filter(msg => msg.isPinned);
     setPinnedMessages(pinned);
   }, [messages]);
 
-  // Listen for messages
   useEffect(() => {
     const q = query(
       collection(db, 'messages'),
       where('conversationId', '==', mockConversationId),
-      ...(searchQuery // Conditionally apply 'where' filter for search
-        ? [where('content', '>=', searchQuery), where('content', '<=', searchQuery + '\uf8ff')]
+      ...(searchQuery
+        ? [where('content', '>=', searchQuery), where('content', '<=', searchQuery + '')]
         : []),
       orderBy('timestamp', 'asc')
     );
@@ -107,8 +103,6 @@ export const ChatWindow = () => {
 
       await Promise.all(deliveredUpdates);
       setMessages(prevMessages => [...prevMessages, ...newMessages]);
-
-      // Mark messages as read
       markMessagesAsRead([...messages, ...newMessages]);
     });
 
@@ -179,38 +173,41 @@ export const ChatWindow = () => {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="border-b border-white/10">
-        <div className="px-6 pt-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-muted-foreground">Public</span>
-              </div>
-              <h2 className="text-lg font-semibold">All PR and Media Credentials</h2>
+    <div className="flex-1 flex flex-col h-full relative bg-background-secondary">
+      {/* Header */}
+      <div className="glass-panel sticky top-0 z-10 px-6 py-4 border-b border-border/50">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="status-indicator status-online"></div>
+              <span className="text-sm text-messenger-secondary">Public</span>
             </div>
-            <div className="text-sm text-muted-foreground">
-              18 Access
-            </div>
+            <h2 className="text-xl font-semibold text-foreground">All PR and Media Credentials</h2>
           </div>
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search messages..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-accent/5 border-0 rounded-md py-2 pl-8 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-            />
+          <div className="text-sm text-messenger-secondary">
+            18 Access
           </div>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-messenger-secondary" />
+          <input
+            type="text"
+            placeholder="Search messages..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-background/50 border border-border/50 rounded-lg py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-messenger-secondary focus:outline-none focus:ring-2 focus:ring-messenger-primary"
+          />
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
+      {/* Messages */}
+      <ScrollArea 
+        className="flex-1 px-6 py-4 overflow-y-auto" 
+        ref={scrollAreaRef}
+      >
         {pinnedMessages.length > 0 && (
           <div className="mb-6 space-y-2">
-            <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
+            <h3 className="text-sm font-medium text-messenger-secondary flex items-center gap-2">
               <Pin className="h-4 w-4" />
               Pinned Messages
             </h3>
@@ -218,11 +215,11 @@ export const ChatWindow = () => {
               {pinnedMessages.map((message) => (
                 <div
                   key={`pinned-${message.id}`}
-                  className={`flex w-full max-w-[80%] ${
-                    message.senderId === currentUserId ? 'ml-auto' : ''
+                  className={`flex w-full ${
+                    message.senderId === currentUserId ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  <div className="w-full bg-white/5 rounded-xl p-3">
+                  <div className="glass-panel max-w-[80%] p-3">
                     <MessageContent
                       content={message.content}
                       type={message.type}
@@ -235,28 +232,37 @@ export const ChatWindow = () => {
             </div>
           </div>
         )}
+        
         <div className="space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex w-full max-w-[80%] ${message.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}
+              className={`flex w-full ${
+                message.senderId === currentUserId ? 'justify-end' : 'justify-start'
+              }`}
             >
-              <div className="relative max-w-[80%] bg-white/10 rounded-3xl p-4 group">
+              <div
+                className={`message-bubble ${
+                  message.senderId === currentUserId
+                    ? 'message-bubble-out'
+                    : 'message-bubble-in'
+                } group`}
+              >
                 <MessageContent
                   content={message.content}
                   type={message.type}
                   className="text-sm"
                   metadata={message.metadata}
                 />
-                <div className="text-xs text-white/50 mt-1 flex items-center gap-1 justify-between">
+                <div className="text-xs text-messenger-secondary mt-1 flex items-center gap-1 justify-between">
                   <div className="flex items-center gap-1">
-                  {message.timestamp.toLocaleTimeString()}
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     {message.senderId === currentUserId && (
                       <ReadReceipt status={message.status} />
                     )}
                   </div>
                   <button
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-1 hover:bg-accent/20"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-1 hover:bg-messenger-primary/10 text-messenger-secondary"
                     onClick={() => {
                       if (message.isPinned) {
                         unpinMessage(message.id);
@@ -278,47 +284,59 @@ export const ChatWindow = () => {
         </div>
       </ScrollArea>
 
-      <div className="p-4 space-y-2 border-t border-white/10">
-        {isTyping && <TypingIndicator conversationId={mockConversationId} />}
+      {/* Input Area */}
+      <div className="sticky bottom-0 left-0 right-0">
+        <div className="glass-panel mx-4 mb-4 p-3 border border-border/50 rounded-2xl">
+          {isTyping && <TypingIndicator conversationId={mockConversationId} />}
 
-        {showMediaUpload ? (
-          <div className="relative">
-            <button
-              className="absolute top-2 right-2 z-10 rounded-full p-2 hover:bg-accent/20"
-              onClick={() => setShowMediaUpload(false)}
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <MediaUpload
-              onUpload={handleMediaUpload}
-              onCancel={() => setShowMediaUpload(false)}
-            />
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <button
-              type="button"
-              className="rounded-full p-2 hover:bg-accent/20"
-              onClick={() => setShowMediaUpload(true)}
-            >
-              <PaperclipIcon className="h-5 w-5" />
-            </button>
-            <Textarea
-              value={inputValue}
-              onChange={handleTyping}
-              placeholder="Type a message..."
-              className="min-h-[60px] flex-1"
-              rows={1}
-            />
-            <Button 
-              type="submit" 
-              disabled={!inputValue.trim()}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              Send
-            </Button>
-          </form>
-        )}
+          {showMediaUpload ? (
+            <div className="relative">
+              <button
+                className="absolute top-2 right-2 z-10 rounded-full p-2 hover:bg-messenger-primary/10 text-messenger-secondary"
+                onClick={() => setShowMediaUpload(false)}
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <MediaUpload
+                onUpload={handleMediaUpload}
+                onCancel={() => setShowMediaUpload(false)}
+              />
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="flex items-end gap-2">
+              <button
+                type="button"
+                className="rounded-full p-2 hover:bg-messenger-primary/10 text-messenger-secondary"
+                onClick={() => setShowMediaUpload(true)}
+              >
+                <PaperclipIcon className="h-5 w-5" />
+              </button>
+              <div className="flex-1 relative">
+                <Textarea
+                  value={inputValue}
+                  onChange={handleTyping}
+                  placeholder="Type a message..."
+                  className="chat-input min-h-[44px] max-h-[120px] resize-none pr-12"
+                  rows={1}
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 bottom-2 rounded-full p-1.5 hover:bg-messenger-primary/10 text-messenger-secondary"
+                >
+                  <Smile className="h-5 w-5" />
+                </button>
+              </div>
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!inputValue.trim()}
+                className="bg-messenger-primary hover:bg-messenger-primary/90 text-white rounded-full h-11 w-11 flex-shrink-0"
+              >
+                <Send className="h-5 w-5" />
+              </Button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

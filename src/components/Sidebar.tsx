@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -15,57 +16,113 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ProfileSettings } from './ProfileSettings';
+import AppSettings from '@/pages/AppSettings'; // Import AppSettings
 
 export const Sidebar = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAppSettings, setShowAppSettings] = useState(false); // New state for AppSettings dialog
 
   if (!user) return null;
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   const navItems = [
-    { icon: User, label: 'Profile', onClick: () => navigate('/settings') },
-    { icon: Users, label: 'Teams', onClick: () => navigate('/') },
-    { icon: MessageSquare, label: 'Chat', onClick: () => navigate('/') },
-    { icon: Bell, label: 'Notifications', onClick: () => {} },
-    { icon: Phone, label: 'Calls', onClick: () => {} },
+    { 
+      icon: User, 
+      label: 'Profile', 
+      onClick: () => setShowSettings(true),
+      className: ''
+    },
+    { 
+      icon: Users, 
+      label: 'Teams', 
+      onClick: () => navigate('/'),
+      className: ''
+    },
+    { 
+      icon: MessageSquare, 
+      label: 'Chat', 
+      onClick: () => navigate('/'),
+      className: ''
+    },
+    { 
+      icon: Bell, 
+      label: 'Notifications', 
+      onClick: () => {},
+      className: ''
+    },
+    { 
+      icon: Phone, 
+      label: 'Calls', 
+      onClick: () => {},
+      className: ''
+    },
     { 
       icon: Settings, 
       label: 'Settings', 
-      onClick: () => navigate('/settings'),
+      onClick: () => setShowAppSettings(true), // Open AppSettings dialog
       className: 'mt-auto'
     },
     { 
       icon: LogOut, 
       label: 'Sign Out', 
-      onClick: async () => {
-        await logout();
-        navigate('/auth');
-      },
-      className: 'text-red-500 hover:bg-red-500/20'
+      onClick: handleLogout,
+      className: 'text-red-500'
     }
   ];
 
   return (
-    <div className="w-16 h-screen bg-accent/5 flex flex-col items-center py-4 border-r border-border/40">
-      {navItems.map((item, index) => (
-        <Tooltip key={item.label} delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button
-              onClick={item.onClick}
-              className={`h-10 w-10 rounded-md p-0 mb-2 ${
-                item.className?.includes('text-red-500')
-                  ? 'text-red-500 hover:bg-red-500/20'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/20'
-              } ${item.className || ''}`}
+    <>
+      <div className="w-16 h-screen bg-background flex flex-col items-center py-4 border-r border-border/50">
+        {navItems.map((item) => (
+          <Tooltip key={item.label} delayDuration={0}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={item.onClick}
+                className={`
+                  h-10 w-10 rounded-lg p-0 mb-2
+                  ${item.className?.includes('text-red-500') 
+                    ? 'text-red-500 hover:bg-red-500/10' 
+                    : 'text-messenger-secondary hover:text-messenger-primary hover:bg-messenger-primary/10'
+                  } 
+                  ${item.className || ''}
+                `}
+              >
+                <item.icon className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent 
+              side="right"
+              className="bg-background-secondary text-foreground border border-border/50"
             >
-              <item.icon className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right">
-            <p>{item.label}</p>
-          </TooltipContent>
-        </Tooltip>
-      ))}
-    </div>
+              <p>{item.label}</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+
+      <ProfileSettings 
+        open={showSettings} 
+        onOpenChange={setShowSettings}
+      />
+      <AppSettings // Render AppSettings as dialog
+        open={showAppSettings}
+        onOpenChange={setShowAppSettings}
+      />
+    </>
   );
 };
+
+export default Sidebar;

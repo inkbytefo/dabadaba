@@ -22,6 +22,9 @@ export interface Message {
   replyTo?: string;
   reactions: { [userId: string]: string };
   status: 'sending' | 'sent' | 'delivered' | 'read';
+  isPinned?: boolean;
+  pinnedAt?: Date;
+  pinnedBy?: string;
   metadata?: {
     fileType?: string;
     fileSize?: number;

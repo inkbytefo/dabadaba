@@ -34,7 +34,7 @@ export const FriendRequestButton: React.FC<FriendRequestButtonProps> = ({ userId
     <div>
       <button
         onClick={handleAddFriend}
-        className="p-1 hover:bg-white/5 transition-colors "
+        className="p-2 hover:bg-white/5 transition-colors rounded-md"
         disabled={status === "loading" || status === "success"}
       >
         {status === "loading" ? "Sending..." : status === "success" ? "Request Sent" : "+"}

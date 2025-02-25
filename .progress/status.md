@@ -40,7 +40,7 @@
   - [x] Threading/replies
   - [x] Reactions
   - [x] Search functionality
-  - [ ] Message pinning
+  - [x] Message pinning
 
 - [ ] Media Handling
   - [ ] Compression

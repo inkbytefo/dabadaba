@@ -91,7 +91,7 @@ export function UsernameDialog({ isOpen, onClose, userId, onComplete }: Username
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Choose your username</DialogTitle>
+          <DialogTitle className="text-xl font-bold">Choose your username</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -105,7 +105,7 @@ export function UsernameDialog({ isOpen, onClose, userId, onComplete }: Username
             />
             {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
-          <Button type="submit" disabled={isLoading} className="w-full">
+          <Button type="submit" disabled={isLoading} className="w-full rounded-full">
             {isLoading ? "Saving..." : "Save Username"}
           </Button>
         </form>

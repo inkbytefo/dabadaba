@@ -72,9 +72,9 @@ export const UserList = () => {
   };
 
   return (
-    <div className="w-72 border-r border-white/10 flex flex-col">
+    <div className="w-80 border-r border-white/10 flex flex-col">
       <div className="p-4 border-b border-white/10">
-        <h2 className="font-semibold">Contacts</h2>
+        <h2 className="text-lg font-bold">Contacts</h2>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-2">
@@ -82,7 +82,7 @@ export const UserList = () => {
             <button
               key={user.id}
               onClick={() => handleUserClick(user)}
-              className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors"
+              className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors"
             >
               <div className="flex items-center space-x-3">
                 <div className="relative">
@@ -94,14 +94,14 @@ export const UserList = () => {
                     />
                   </Avatar>
                   <span
-                    className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background ${getStatusColor(
+                    className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background ${getStatusColor(
                       user.status
                     )}`}
                   />
                 </div>
                 <div className="flex-1 text-left">
-                  <div className="font-medium">{user.displayName}</div>
-                  <div className="text-sm text-gray-500 flex items-center">
+                  <div className="text-lg font-medium">{user.displayName}</div>
+                  <div className="text-sm text-gray-400 flex items-center">
                     {user.status === "online" ? (
                       <>
                         <Dot className="h-4 w-4 text-green-500" />

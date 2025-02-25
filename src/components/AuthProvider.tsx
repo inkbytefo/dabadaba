@@ -88,20 +88,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
 
   const signUpWithGoogle = async (): Promise<User> => {
     try {
+      console.log("Google Sign-in started"); // Added log
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       
+      console.log("Calling signInWithPopup"); // Added log
       const result = await signInWithPopup(auth, provider);
-      
+      console.log("signInWithPopup successful", result); // Added log
+
       await createUserProfile(result.user.uid, {
         email: result.user.email || '',
         displayName: result.user.displayName || 'User',
         photoURL: result.user.photoURL || '',
+        username: result.user.email?.split('@')[0] || 'defaultusername', // Generate default username
       });
       
       return result.user;
     } catch (err) {
       console.error("Google sign in error:", err);
+      console.error("Google sign-in error object:", err); // Log error object
       if (err instanceof FirebaseError) {
         throw err;
       }

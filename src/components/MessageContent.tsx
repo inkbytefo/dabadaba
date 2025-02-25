@@ -74,7 +74,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
         <img
           src={content}
           alt={metadata?.fileName || 'Image'}
-          className="max-w-full rounded-lg"
+          className="max-w-full rounded-xl"
           style={{
             maxHeight: '300px',
             width: 'auto',
@@ -104,7 +104,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
         <video
           src={content}
           controls
-          className="max-w-full rounded-lg"
+          className="max-w-full rounded-xl"
           style={{
             maxHeight: '300px',
             width: 'auto'
@@ -133,7 +133,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
   if (type === 'audio') {
     return (
       <div className={`space-y-2 ${className}`}>
-        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+        <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl">
           <AudioLines className="h-8 w-8 text-blue-400" />
           <div className="flex-1 min-w-0">
             <div className="text-sm truncate">
@@ -161,7 +161,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
           href={content}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+          className="flex items-center gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
         >
           <FileIcon className="h-8 w-8 text-blue-400" />
           <div className="flex-1 min-w-0">
@@ -186,7 +186,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
           href={linkPreview.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex flex-col rounded-md border border-white/20 hover:border-white/30 transition-colors overflow-hidden"
+          className="group flex flex-col rounded-xl border border-white/20 hover:border-white/30 transition-colors overflow-hidden"
         >
           {linkPreview.image && (
             <img src={linkPreview.image} alt={linkPreview.title} className="w-full h-auto object-cover aspect-video" />

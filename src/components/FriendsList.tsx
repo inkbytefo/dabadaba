@@ -44,14 +44,14 @@ export const FriendsList = () => {
 
   return (
     <div className="p-4 flex-col space-y-4">
-      <h2 className="font-semibold text-xl">Friends</h2>
+      <h2 className="font-bold text-lg">Friends</h2>
       {friends.length === 0 ? (
-        <p className="text-gray-500">No friends yet.</p>
+        <p className="text-gray-400">No friends yet.</p>
       ) : (
         <ScrollArea className="flex-1">
         <ul className="space-y-2">
           {friends.map((friend) => (
-            <li key={friend.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
+            <li key={friend.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
               <div className="flex items-center space-x-3">
                 <div className="relative">
                   <Avatar className="h-8 w-8">
@@ -68,8 +68,8 @@ export const FriendsList = () => {
                   />
                 </div>
                 <div className="flex-1 text-left">
-                  <div className="font-medium">{friend.displayName}</div>
-                  <div className="text-sm text-gray-500 flex items-center">
+                  <div className="text-lg font-medium">{friend.displayName}</div>
+                  <div className="text-sm text-gray-400 flex items-center">
                     {friend.status === "online" ? (
                       <>
                         <Dot className="h-3 w-3 text-green-500" />
@@ -91,7 +91,7 @@ export const FriendsList = () => {
               </div>
               <button 
                 onClick={() => handleRemoveFriend(friend.id)}
-                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm"
               >
                 Remove Friend
               </button>

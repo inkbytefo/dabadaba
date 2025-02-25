@@ -35,16 +35,16 @@ export const createUserProfile = async (userId: string, data: Partial<User>): Pr
   try {
     console.log('Creating user profile:', { userId, data });
     const userRef = doc(db, 'users', userId);
-    
+
     const profile = {
-      username: (data.username || '').toLowerCase(),
-      displayName: data.username || '',
+      username: (data.username || data.email?.split('@')[0] || 'defaultusername').toLowerCase(), // Ensure username is always set and generate default if needed
+      displayName: data.displayName || data.username || data.email?.split('@')[0] || 'defaultusername', // Use displayName if available, otherwise username
       email: data.email || '',
       photoURL: data.photoURL || '',
       status: 'online',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      friends: []
+      friends: [],
     };
 
     await setDoc(userRef, profile);
@@ -155,7 +155,10 @@ export const subscribeToFriendsList = (
           return friend;
         })
       );
-      callback(friendProfiles.filter((friend): friend is User => friend !== null));
+      callback(friendProfiles
+        .filter((friend): friend is User => friend !== null)
+        .filter(friend => friend.id !== userId) // Filter out current user
+      );
     } else {
       callback([]);
     }
@@ -205,6 +208,7 @@ export const sendFriendRequest = async (senderId: string, receiverId: string) =>
     receiverId,
     status: 'pending',
     createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   });
   return friendRequestRef.id;
 };
@@ -233,4 +237,74 @@ export const getReceivedFriendRequests = async (userId: string): Promise<FriendR
     ...doc.data(),
     id: doc.id,
   })) as FriendRequest[];
+};
+
+// Messaging functions
+export const sendMessage = async (messageData: Partial<Message>): Promise<void> => {
+  const messageRef = doc(collection(db, 'messages'));
+  await setDoc(messageRef, {
+    ...messageData,
+    id: messageRef.id,
+    timestamp: serverTimestamp(),
+    status: 'sent',
+  });
+};
+
+export const updateDoc = async (docId: string, data: Partial<Message>): Promise<void> => {
+  const messageRef = doc(db, 'messages', docId);
+  await firestoreUpdateDoc(messageRef, {
+    ...data,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const deleteDoc = async (docId: string): Promise<void> => {
+  const messageRef = doc(db, 'messages', docId);
+  await firestoreDeleteDoc(messageRef);
+};
+
+export const updateMessageStatus = async (messageId: string, status: Message['status']): Promise<void> => {
+  const messageRef = doc(db, 'messages', messageId);
+  await firestoreUpdateDoc(messageRef, {
+    status,
+    updatedAt: serverTimestamp(),
+  });
+};
+
+export const subscribeToMessages = (
+  parentId: string,
+  callback: (messages: Message[]) => void
+): (() => void) => {
+  const q = query(
+    collection(db, 'messages'),
+    where('conversationId', '==', parentId),
+    orderBy('timestamp', 'asc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    })) as Message[];
+    callback(messages);
+  });
+};
+
+export const subscribeToConversations = (
+  userId: string,
+  callback: (conversations: Conversation[]) => void
+): (() => void) => {
+  const q = query(
+    collection(db, 'conversations'),
+    where('participants', 'array-contains', userId),
+    orderBy('updatedAt', 'desc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const conversations = snapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id,
+    })) as Conversation[];
+    callback(conversations);
+  });
 };

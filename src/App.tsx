@@ -1,69 +1,29 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider, RequireAuth, useAuth } from "@/components/AuthProvider";
+import { AuthProvider, RequireAuth } from "@/components/AuthProvider";
 import Index from "@/pages/Index";
 import Auth from "@/pages/auth/Auth";
+import { ThemeProvider } from "./components/ThemeProvider";
 import { Register } from "@/pages/auth/Register";
 import { Settings } from "@/pages/Settings";
-
-function LogoutButton() {
-  const { logout, user } = useAuth();
-  if (!user) return null;
-  
-  return (
-    <button
-      onClick={async () => {
-        await logout();
-      }}
-      className="absolute top-4 right-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded ml-2"
-    >
-      Sign Out
-    </button>
-  );
-}
-
-function SettingsLink() {
-  const { user } = useAuth();
-  if (!user) return null;
-  
-  return (
-    <a
-      href="/settings"
-      className="absolute top-4 right-32 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-    >
-      Settings
-    </a>
-  );
-}
+import { MessengerLayout } from "@/components/MessengerLayout";
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <LogoutButton />
-        <SettingsLink />
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/register" element={<Register />} />
-          <Route
-            path="/settings"
-            element={
-              <RequireAuth>
-                <Settings />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/"
-            element={
-              <RequireAuth>
-                <Index />
-              </RequireAuth>
-            }
-          />
-        </Routes>
-        <Toaster />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/register" element={<Register />} />
+            <Route element={<RequireAuth><MessengerLayout /></RequireAuth>}>
+              <Route path="/" element={<Index />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Routes>
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }

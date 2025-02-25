@@ -132,7 +132,7 @@ export const MediaUpload = ({ onUpload, onCancel }: MediaUploadProps) => {
   };
 
   return (
-    <div className="space-y-4 p-4 border border-white/10 rounded-lg">
+    <div className="space-y-4 p-6 border border-white/10 rounded-3xl">
       <input
         ref={fileInputRef}
         type="file"
@@ -144,7 +144,7 @@ export const MediaUpload = ({ onUpload, onCancel }: MediaUploadProps) => {
 
       {selectedFiles.length > 0 ? (
         <>
-          <Carousel className="w-full max-w-sm mx-auto">
+          <Carousel className="w-full max-w-md mx-auto">
             <CarouselContent>
               {previews.map((preview, index) => (
                 <CarouselItem key={index} className="h-48">
@@ -152,12 +152,12 @@ export const MediaUpload = ({ onUpload, onCancel }: MediaUploadProps) => {
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="object-cover rounded-lg"
+                      className="object-cover rounded-xl"
                     />
                   ) : (
                     <video
                       src={preview}
-                      className="object-cover rounded-lg"
+                      className="object-cover rounded-xl"
                       controls
                     />
                   )}
@@ -167,14 +167,14 @@ export const MediaUpload = ({ onUpload, onCancel }: MediaUploadProps) => {
           </Carousel>
 
           <div className="flex items-center gap-2">
-            <Progress value={uploadProgress} className="flex-1" />
+            <Progress value={uploadProgress} className="flex-1 rounded-full" />
             <span className="text-sm text-gray-400">{Math.round(uploadProgress)}%</span>
           </div>
 
           <div className="flex justify-end gap-2">
             <Button
-              variant="outline"
-              size="sm"
+              variant="default"
+              size="default"
               onClick={clearSelection}
               disabled={isUploading}
             >
@@ -182,7 +182,7 @@ export const MediaUpload = ({ onUpload, onCancel }: MediaUploadProps) => {
               Cancel
             </Button>
             <Button
-              size="sm"
+              size="default"
               onClick={handleUpload}
               disabled={isUploading}
             >
@@ -193,8 +193,8 @@ export const MediaUpload = ({ onUpload, onCancel }: MediaUploadProps) => {
         </>
       ) : (
         <Button
-          variant="outline"
-          className="w-full h-24 border-dashed"
+          variant="default"
+          className="w-full h-24 border-dashed rounded-xl"
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="h-6 w-6 mr-2" />

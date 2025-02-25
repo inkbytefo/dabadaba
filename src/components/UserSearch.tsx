@@ -18,18 +18,18 @@ export const UserSearch = () => {
   };
 
   return (
-    <div className="p-4">
+    <div className="p-4 pb-0">
       <input
         type="text"
-        placeholder="Search users..."
-        className="w-full p-2 border border-white/10 rounded-md bg-transparent text-white"
+        placeholder="Search Contacts"
+        className="w-full p-3 border border-white/10 rounded-full bg-transparent text-white placeholder-gray-400 focus:ring-0 focus-visible:ring-0 focus:border-messenger-primary"
         value={searchTerm}
         onChange={(e) => handleSearch(e.target.value)}
       />
       {searchResults.length > 0 && (
-        <ul className="mt-2 space-y-2">
+        <ul className="mt-3 space-y-2">
           {searchResults.map((user) => (
-            <li key={user.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
+            <li key={user.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
               <div>{user.displayName}</div>
               <FriendRequestButton userId={user.id} />
             </li>

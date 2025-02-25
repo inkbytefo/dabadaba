@@ -12,6 +12,8 @@ interface MessagingState {
   loadingMessages: boolean;
   error: string | null;
   // Actions
+  pinMessage: (messageId: string) => Promise<void>;
+  unpinMessage: (messageId: string) => Promise<void>;
   setCurrentConversation: (conversation: Conversation | null) => void;
   setCurrentChannel: (channel: Channel | null) => void;
   sendMessage: (content: string, type?: Message['type'], metadata?: Message['metadata']) => Promise<void>;
@@ -120,6 +122,33 @@ export const useMessagingStore = create<MessagingState>()(
           set({ error: (error as Error).message });
         }
       },
+
+      pinMessage: async (messageId) => {
+        try {
+          const userId = window.auth.currentUser?.uid;
+          if (!userId) return;
+
+          await FirebaseService.updateDoc(messageId, {
+            isPinned: true,
+            pinnedAt: new Date(),
+            pinnedBy: userId
+          });
+        } catch (error) {
+          set({ error: (error as Error).message });
+        }
+      },
+
+      unpinMessage: async (messageId) => {
+        try {
+          await FirebaseService.updateDoc(messageId, {
+            isPinned: false,
+            pinnedAt: null,
+            pinnedBy: null
+          });
+        } catch (error) {
+          set({ error: (error as Error).message });
+        }
+      },
     }))
   )
 );
@@ -149,6 +178,8 @@ export const useMessages = () => {
     deleteMessage: state.deleteMessage,
     reactToMessage: state.reactToMessage,
     markAsRead: state.markMessageAsRead,
+    pinMessage: state.pinMessage,
+    unpinMessage: state.unpinMessage,
   }));
 };
 

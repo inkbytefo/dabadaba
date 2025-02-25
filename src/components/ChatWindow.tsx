@@ -6,7 +6,7 @@ import { MessageContent } from "./MessageContent";
 import { TypingIndicator } from "./TypingIndicator";
 import { MediaUpload } from "./MediaUpload";
 import { ReadReceipt } from "./ReadReceipt";
-import { PaperclipIcon, X, Search } from "lucide-react";
+import { PaperclipIcon, X, Search, Pin, PinOff } from "lucide-react";
 import {
   addDoc,
   collection,
@@ -22,8 +22,10 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Message as MessageType } from "@/types/models";
+import { useMessagingStore } from "@/store/messaging";
 
 export const ChatWindow = () => {
+  const { pinMessage, unpinMessage } = useMessagingStore();
   const mockConversationId = "demo-conversation";
   const currentUserId = window.auth.currentUser?.uid || 'demo-user';
 
@@ -31,7 +33,8 @@ export const ChatWindow = () => {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showMediaUpload, setShowMediaUpload] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(''); // State for search query
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pinnedMessages, setPinnedMessages] = useState<MessageType[]>([]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom when new messages arrive
@@ -60,6 +63,12 @@ export const ChatWindow = () => {
       }
     }
   }, [currentUserId]);
+
+  // Filter pinned messages
+  useEffect(() => {
+    const pinned = messages.filter(msg => msg.isPinned);
+    setPinnedMessages(pinned);
+  }, [messages]);
 
   // Listen for messages
   useEffect(() => {
@@ -173,7 +182,7 @@ export const ChatWindow = () => {
     <div className="flex-1 flex flex-col">
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Chat</h2>
+          <h2 className="text-2xl font-bold">Chat</h2>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
             <input
@@ -181,33 +190,78 @@ export const ChatWindow = () => {
               placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-md py-2 pl-8 pr-4 text-sm focus:outline-none focus:border-blue-500"
+              className="bg-white/5 border border-white/10 rounded-full py-2 pl-8 pr-4 text-sm focus:outline-none focus:border-blue-500"
             />
           </div>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
+        {pinnedMessages.length > 0 && (
+          <div className="mb-6 space-y-2">
+            <h3 className="text-sm font-medium text-white/70 flex items-center gap-2">
+              <Pin className="h-4 w-4" />
+              Pinned Messages
+            </h3>
+            <div className="space-y-2">
+              {pinnedMessages.map((message) => (
+                <div
+                  key={`pinned-${message.id}`}
+                  className={`flex w-full max-w-[80%] ${
+                    message.senderId === currentUserId ? 'ml-auto' : ''
+                  }`}
+                >
+                  <div className="w-full bg-white/5 rounded-xl p-3">
+                    <MessageContent
+                      content={message.content}
+                      type={message.type}
+                      className="text-sm"
+                      metadata={message.metadata}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${
-                message.senderId === currentUserId ? 'justify-end' : 'justify-start'
-              }`}
+              className={`flex w-full max-w-[80%] ${message.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}
             >
-              <div className="max-w-[80%] bg-white/5 rounded-lg p-3">
+              <div className="relative max-w-[80%] bg-white/10 rounded-3xl p-4 group">
                 <MessageContent
                   content={message.content}
                   type={message.type}
                   className="text-sm"
                   metadata={message.metadata}
                 />
-                <div className="text-xs text-white/50 mt-1 flex items-center gap-1">
+                <div className="text-xs text-white/50 mt-1 flex items-center gap-1 justify-between">
+                  <div className="flex items-center gap-1">
                   {message.timestamp.toLocaleTimeString()}
-                  {message.senderId === currentUserId && (
-                    <ReadReceipt status={message.status} />
-                  )}
+                    {message.senderId === currentUserId && (
+                      <ReadReceipt status={message.status} />
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => {
+                      if (message.isPinned) {
+                        unpinMessage(message.id);
+                      } else {
+                        pinMessage(message.id);
+                      }
+                    }}
+                  >
+                    {message.isPinned ? (
+                      <PinOff className="h-3 w-3" />
+                    ) : (
+                      <Pin className="h-3 w-3" />
+                    )}
+                  </Button>
                 </div>
               </div>
             </div>

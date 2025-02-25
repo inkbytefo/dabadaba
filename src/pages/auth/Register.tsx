@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Gamepad } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { isUsernameAvailable } from "@/services/firebase";
 import { toast } from "sonner";
 import { FirebaseError } from "firebase/app";
+import { Card } from "@/components/ui/card";
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
@@ -72,77 +72,72 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 glass-panel p-8 rounded-2xl animate-fade-in">
-        <div className="text-center">
-          <div className="flex justify-center">
-            <Gamepad className="h-12 w-12 text-messenger-primary" />
+    <div className="flex min-h-screen items-center justify-center bg-black py-12">
+      <Card className="w-full max-w-md space-y-6 bg-zinc-800 border border-zinc-700 rounded-2xl shadow-xl p-8">
+        <div className="flex flex-col items-center gap-6">
+          <div className="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center">
+            <span className="text-3xl font-bold text-white">M</span>
           </div>
-          <h2 className="mt-6 text-3xl font-bold">Create Account</h2>
-          <p className="mt-2 text-sm text-gray-400">
-            Fill in your details to create a new account
-          </p>
+          <h2 className="text-2xl font-semibold text-center text-white">Create Account</h2>
         </div>
 
-        <form onSubmit={handleEmailSignUp} className="space-y-6">
-          <div>
-            <Input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
-              required
-              className="bg-white/5 border-white/10"
-            />
-            <p className="mt-2 text-sm text-gray-400">
-              Choose a unique username to identify yourself (3-20 characters)
-              <br />
-              Only letters, numbers, and underscores allowed
-            </p>
-          </div>
-          <div>
+        <form onSubmit={handleEmailSignUp} className="mt-6 space-y-6">
+          <div className="space-y-4">
+            <div>
+              <Input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Username"
+                required
+                className="rounded-xl border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400 focus-visible:ring-2 focus-visible:ring-yellow-500 h-12"
+              />
+              <p className="mt-2 text-sm text-zinc-400">
+                Choose a unique username (3-20 characters, letters, numbers, and underscores only)
+              </p>
+            </div>
             <Input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Email address"
               required
-              className="bg-white/5 border-white/10"
+              className="rounded-xl border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400 focus-visible:ring-2 focus-visible:ring-yellow-500 h-12"
             />
+            <div>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                required
+                className="rounded-xl border border-zinc-700 bg-zinc-800 text-white placeholder-zinc-400 focus-visible:ring-2 focus-visible:ring-yellow-500 h-12"
+              />
+              <p className="mt-2 text-sm text-zinc-400">
+                Password must be at least 6 characters long
+              </p>
+            </div>
           </div>
-          <div>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              required
-              className="bg-white/5 border-white/10"
-            />
-            <p className="mt-2 text-sm text-gray-400">
-              Password must be at least 6 characters long
-            </p>
-          </div>
-          <div className="flex gap-4">
-            <Button
-              type="submit"
+
+          <div className="space-y-4 pt-2">
+            <Button 
+              type="submit" 
+              className="w-full rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-semibold h-12" 
               disabled={loading}
-              className="flex-1 bg-messenger-primary hover:bg-messenger-secondary"
             >
-              Create Account
+              {loading ? "Creating account..." : "Create Account"}
             </Button>
             <Button
               type="button"
-              disabled={loading}
+              className="w-full rounded-xl border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700 font-semibold h-12"
               onClick={() => navigate("/auth")}
-              variant="outline"
-              className="flex-1 border-white/10 hover:bg-white/5"
+              disabled={loading}
             >
               Back to Login
             </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
   );
 };

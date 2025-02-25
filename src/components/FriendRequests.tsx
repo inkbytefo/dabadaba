@@ -72,11 +72,11 @@ export const FriendRequests = () => {
 
   return (
     <div className="p-4 flex-col space-y-4 border-r border-white/10">
-      <div className="p-4 border-b border-white/10">
-        <h2 className="font-semibold">Friend Requests</h2>
+      <div className="pb-4 border-b border-white/10">
+        <h2 className="font-bold text-lg">Friend Requests</h2>
       </div>
       {friendRequests.length === 0 ? (
-        <p className="text-gray-500 p-4">No friend requests yet.</p>
+        <p className="text-gray-400 p-4">No friend requests yet.</p>
       ) : (
         <ScrollArea className="flex-1">
         <ul className="space-y-2">

@@ -43,7 +43,7 @@ export const FriendRequestItem: React.FC<FriendRequestItemProps> = ({ request, s
   };
 
   return (
-    <li key={request.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
+    <li key={request.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
       <div className="flex items-center space-x-3">
         <Avatar className="h-8 w-8">
           <img
@@ -52,20 +52,20 @@ export const FriendRequestItem: React.FC<FriendRequestItemProps> = ({ request, s
             className="object-cover"
           />
         </Avatar>
-        <div>Friend request from: <span className="font-semibold">{senderProfile?.displayName || request.senderId}</span></div>
+        <div>Friend request from: <span className="text-lg font-semibold">{senderProfile?.displayName || request.senderId}</span></div>
       </div>
       <div className="space-x-2">
         <button 
           onClick={handleAcceptRequest} 
           disabled={acceptStatus === "loading" || rejectStatus === "loading"}
-          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+          className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm"
         >
           {acceptStatus === "loading" ? "Accepting..." : "Accept"}
         </button>
         <button 
           onClick={handleRejectRequest} 
           disabled={rejectStatus === "loading" || acceptStatus === "loading"}
-          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm"
         >
           {rejectStatus === "loading" ? "Rejecting..." : "Reject"}
         </button>

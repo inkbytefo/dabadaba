@@ -57,16 +57,16 @@ export const SentFriendRequests = () => {
 
   return (
     <div className="p-4 flex-col space-y-4 border-r border-white/10">
-      <div className="p-4 border-b border-white/10">
-        <h2 className="font-semibold">Sent Friend Requests</h2>
+      <div className="pb-4 border-b border-white/10">
+        <h2 className="font-bold text-lg">Sent Friend Requests</h2>
       </div>
       {sentFriendRequests.length === 0 ? (
-        <p className="text-gray-500 p-4">No sent friend requests yet.</p>
+        <p className="text-gray-400 p-4">No sent friend requests yet.</p>
       ) : (
         <ScrollArea className="flex-1">
           <ul className="space-y-2">
             {sentFriendRequests.map((request) => (
-              <li key={request.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
+              <li key={request.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors border border-white/10">
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <Avatar className="h-8 w-8">
@@ -77,19 +77,19 @@ export const SentFriendRequests = () => {
                       />
                     </Avatar>
                     <span
-                      className={`absolute bottom-0 right-0 h-2 w-2 rounded-full border-2 border-background bg-gray-500`} // No status for receiver
+                      className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-background bg-gray-500`} // No status for receiver
                     />
                   </div>
                   <div className="flex-1 text-left">
-                    <div className="font-medium">{receiverProfiles[request.receiverId]?.displayName}</div>
-                    <div className="text-sm text-gray-500 flex items-center">
+                    <div className="text-lg font-medium">{receiverProfiles[request.receiverId]?.displayName}</div>
+                    <div className="text-sm text-gray-400 flex items-center">
                       Pending
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => handleCancel(request.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm"
                 >
                   Cancel Request
                 </button>

@@ -17,13 +17,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { ProfileSettings } from './ProfileSettings';
-import AppSettings from '@/pages/AppSettings'; // Import AppSettings
+import AppSettings from '@/pages/AppSettings';
+import { TeamList } from './TeamList';
+import {
+  Dialog,
+  DialogContent
+} from "@/components/ui/dialog"
 
 export const Sidebar = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
-  const [showAppSettings, setShowAppSettings] = useState(false); // New state for AppSettings dialog
+  const [showAppSettings, setShowAppSettings] = useState(false);
+  const [showTeams, setShowTeams] = useState(false);
 
   if (!user) return null;
 
@@ -46,7 +52,7 @@ export const Sidebar = () => {
     { 
       icon: Users, 
       label: 'Teams', 
-      onClick: () => navigate('/'),
+      onClick: () => setShowTeams(true),
       className: ''
     },
     { 
@@ -121,6 +127,11 @@ export const Sidebar = () => {
         open={showAppSettings}
         onOpenChange={setShowAppSettings}
       />
+      <Dialog open={showTeams} onOpenChange={setShowTeams}>
+        <DialogContent className="max-w-none p-0">
+          <TeamList />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -1,8 +1,10 @@
-
+import { AuthProvider } from "@/components/AuthProvider";
 import { MessengerLayout } from "@/components/MessengerLayout";
 
-const Index = () => {
-  return <MessengerLayout />;
-};
-
-export default Index;
+export default function Index() {
+  return (
+    <AuthProvider>
+      <MessengerLayout />
+    </AuthProvider>
+  );
+}

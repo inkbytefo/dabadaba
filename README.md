@@ -78,3 +78,16 @@ This project is a messenger application.
 *   **src/components/\***: Contains various UI components.
 *   **src/lib/firebase.ts:** Contains Firebase configuration and utility functions.
 *   **src/pages/\***: Contains the application's pages.
+
+## Documentation
+
+For more detailed information about the project structure and components, please refer to the documentation files in the `docs` directory:
+
+- [Code Structure Documentation](./docs/code-structure.md)
+- [Components Documentation](./docs/components.md)
+- [UI Components Documentation](./docs/ui-components.md)
+- [Hooks Documentation](./docs/hooks.md)
+- [Lib Documentation](./docs/lib.md)
+- [Pages Documentation](./docs/pages.md)
+- [Services Documentation](./docs/services.md)
+- [Types Documentation](./docs/types.md)

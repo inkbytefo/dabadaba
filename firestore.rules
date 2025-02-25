@@ -2,8 +2,91 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    function isConversationMember(conversationId) {
+      let conversation = get(/databases/$(database)/documents/conversations/$(conversationId));
+      return conversation != null && 
+        (conversation.data.participants[request.auth.uid] == true || 
+         conversation.data.isGroup == true);
+    }
+    
+    function isChannelMember(channelId) {
+      let channel = get(/databases/$(database)/documents/channels/$(channelId));
+      return channel != null && channel.data.members[request.auth.uid] == true;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if false; // Users cannot be deleted, only deactivated
+    }
+
+    // Messages collection
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && (
+        isConversationMember(resource.data.conversationId) || 
+        isChannelMember(resource.data.channelId)
+      );
+      allow create: if isSignedIn() && (
+        isConversationMember(request.resource.data.conversationId) || 
+        isChannelMember(request.resource.data.channelId)
+      ) && request.resource.data.senderId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.senderId == request.auth.uid && 
+        request.resource.data.senderId == request.auth.uid &&
+        resource.data.conversationId == request.resource.data.conversationId
+      );
+      allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
+    }
+
+    // Conversations collection
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && resource.data.participants[request.auth.uid] == true;
+      allow create: if isSignedIn() && request.resource.data.participants[request.auth.uid] == true;
+      allow update: if isSignedIn() && 
+        resource.data.participants[request.auth.uid] == true && 
+        request.resource.data.participants[request.auth.uid] == true;
+      allow delete: if false; // Conversations are archived, not deleted
+    }
+
+    // Channels collection
+    match /channels/{channelId} {
+      allow read: if isSignedIn() && resource.data.members[request.auth.uid] == true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (
+        resource.data.members[request.auth.uid] == true && 
+        request.resource.data.members[request.auth.uid] == true
+      );
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Voice channels collection
+    match /voiceChannels/{channelId} {
+      allow read: if isSignedIn() && isChannelMember(channelId);
+      allow create: if isSignedIn() && request.resource.data.creatorId == request.auth.uid;
+      allow update: if isSignedIn() && isChannelMember(channelId);
+      allow delete: if isSignedIn() && resource.data.creatorId == request.auth.uid;
+    }
+
+    // Voice states collection
+    match /voiceStates/{stateId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
   }
 }

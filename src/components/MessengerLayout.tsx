@@ -1,24 +1,18 @@
-
 import React from "react";
-import { UserList } from "./UserList";
 import { ChatWindow } from "./ChatWindow";
-import { useAuth } from "./AuthProvider";
+import { UserList } from "./UserList";
+import { FriendsList } from "./FriendsList";
+import { FriendRequests } from "./FriendRequests";
 
 export const MessengerLayout = () => {
-  const { logout } = useAuth();
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-6xl h-[800px] glass-panel rounded-2xl flex overflow-hidden animate-fade-in">
-        <button
-          onClick={async () => {
-            await logout();
-          }}
-          className="absolute top-4 right-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Sign Out
-        </button>
-        <UserList />
+        <div className="flex flex-col">
+          <FriendsList />
+          <FriendRequests />
+          <UserList />
+        </div>
         <ChatWindow />
       </div>
     </div>

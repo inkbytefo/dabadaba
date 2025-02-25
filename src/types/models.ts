@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   displayName: string;
+  username: string; // Added username field
   email: string;
   photoURL?: string;
   status: 'online' | 'offline' | 'away';

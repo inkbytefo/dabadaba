@@ -12,7 +12,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signUpWithGoogle } = useAuth();
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,11 +20,12 @@ const Auth = () => {
       setLoading(true);
       await signIn(email, password);
       navigate("/");
-    } catch (error) {
-      if (error instanceof FirebaseError || error instanceof Error) {
-        toast.error(error.message);
+    } catch (err) {
+      console.error("Email sign-in error:", err);
+      if (err instanceof FirebaseError) {
+        toast.error(err.message);
       } else {
-        toast.error("An unexpected error occurred");
+        toast.error("An unexpected error occurred during sign in");
       }
     } finally {
       setLoading(false);
@@ -34,13 +35,14 @@ const Auth = () => {
   const handleGoogleSignIn = async () => {
     try {
       setLoading(true);
-      await signInWithGoogle();
+      await signUpWithGoogle();
       navigate("/");
-    } catch (error) {
-      if (error instanceof FirebaseError || error instanceof Error) {
-        toast.error(error.message);
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      if (err instanceof FirebaseError) {
+        toast.error(err.message);
       } else {
-        toast.error("An unexpected error occurred");
+        toast.error("An unexpected error occurred during Google sign in");
       }
     } finally {
       setLoading(false);
@@ -48,87 +50,49 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 glass-panel p-8 rounded-2xl animate-fade-in">
-        <div className="text-center">
-          <div className="flex justify-center">
-            <Gamepad className="h-12 w-12 text-messenger-primary" />
-          </div>
-          <h2 className="mt-6 text-3xl font-bold">Welcome</h2>
-          <p className="mt-2 text-sm text-gray-400">
-            Sign in or create an account to start messaging
-          </p>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-md space-y-8 rounded-lg border p-6 shadow-lg">
+        <div className="flex flex-col items-center gap-8">
+          <Gamepad className="h-12 w-12" />
+          <h2 className="text-2xl font-bold">Sign in to your account</h2>
         </div>
 
-        <div className="mt-8 space-y-6">
-          <Button
-            disabled={loading}
-            onClick={handleGoogleSignIn}
-            className="w-full bg-white/10 hover:bg-white/20 text-white"
-          >
-            <img
-              src="https://www.google.com/favicon.ico"
-              alt="Google"
-              className="w-5 h-5 mr-2"
+        <form onSubmit={handleEmailSignIn} className="mt-8 space-y-6">
+          <div className="space-y-4">
+            <Input
+              type="email"
+              placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
             />
-            Continue with Google
-          </Button>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/10" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-background text-gray-400">
-                Or continue with email
-              </span>
-            </div>
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
           </div>
 
-          <form onSubmit={handleEmailSignIn} className="space-y-4">
-            <div>
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                required
-                className="bg-white/5 border-white/10"
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                required
-                className="bg-white/5 border-white/10"
-              />
-            </div>
-            <div className="flex gap-4">
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-messenger-primary hover:bg-messenger-secondary"
-              >
-                Sign In
-              </Button>
-              <Button
-                type="button"
-                disabled={loading}
-                onClick={() => navigate("/register")}
-                variant="outline"
-                className="flex-1 border-white/10 hover:bg-white/5"
-              >
-                Create Account
-              </Button>
-            </div>
-          </form>
-        </div>
+          <div className="space-y-4">
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in..." : "Sign in with Email"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+            >
+              {loading ? "Signing in..." : "Sign in with Google"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export { Auth };
+export default Auth;

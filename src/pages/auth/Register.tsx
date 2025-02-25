@@ -4,25 +4,51 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Gamepad } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { isUsernameAvailable } from "@/services/firebase";
 import { toast } from "sonner";
 import { FirebaseError } from "firebase/app";
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  
+  const validateUsername = (value: string) => {
+    if (value.length < 3) {
+      return "Username must be at least 3 characters long";
+    }
+    if (value.length > 20) {
+      return "Username must be less than 20 characters";
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      return "Username can only contain letters, numbers, and underscores";
+    }
+    return null;
+  };
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const usernameError = validateUsername(username);
+      if (usernameError) {
+        toast.error(usernameError);
+        return;
+      }
+
       setLoading(true);
+      const isAvailable = await isUsernameAvailable(username);
+      if (!isAvailable) {
+        toast.error("This username is already taken");
+        return;
+      }
       if (password.length < 6) {
         toast.error("Password must be at least 6 characters long");
         return;
       }
-      await signUp(email, password);
+      await signUp(email, password, username);
       toast.success("Account created successfully! Please sign in.");
       navigate("/auth");
     } catch (error) {
@@ -59,6 +85,21 @@ const Register = () => {
         </div>
 
         <form onSubmit={handleEmailSignUp} className="space-y-6">
+          <div>
+            <Input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Username"
+              required
+              className="bg-white/5 border-white/10"
+            />
+            <p className="mt-2 text-sm text-gray-400">
+              Choose a unique username to identify yourself (3-20 characters)
+              <br />
+              Only letters, numbers, and underscores allowed
+            </p>
+          </div>
           <div>
             <Input
               type="email"

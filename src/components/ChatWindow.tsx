@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -180,17 +180,28 @@ export const ChatWindow = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Chat</h2>
+      <div className="border-b border-white/10">
+        <div className="px-6 pt-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-muted-foreground">Public</span>
+              </div>
+              <h2 className="text-lg font-semibold">All PR and Media Credentials</h2>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              18 Access
+            </div>
+          </div>
           <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-full py-2 pl-8 pr-4 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-accent/5 border-0 rounded-md py-2 pl-8 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
@@ -244,10 +255,8 @@ export const ChatWindow = () => {
                       <ReadReceipt status={message.status} />
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  <button
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-1 hover:bg-accent/20"
                     onClick={() => {
                       if (message.isPinned) {
                         unpinMessage(message.id);
@@ -261,7 +270,7 @@ export const ChatWindow = () => {
                     ) : (
                       <Pin className="h-3 w-3" />
                     )}
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
@@ -274,14 +283,12 @@ export const ChatWindow = () => {
 
         {showMediaUpload ? (
           <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10"
+            <button
+              className="absolute top-2 right-2 z-10 rounded-full p-2 hover:bg-accent/20"
               onClick={() => setShowMediaUpload(false)}
             >
               <X className="h-4 w-4" />
-            </Button>
+            </button>
             <MediaUpload
               onUpload={handleMediaUpload}
               onCancel={() => setShowMediaUpload(false)}
@@ -289,14 +296,13 @@ export const ChatWindow = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex gap-2">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="icon"
+              className="rounded-full p-2 hover:bg-accent/20"
               onClick={() => setShowMediaUpload(true)}
             >
               <PaperclipIcon className="h-5 w-5" />
-            </Button>
+            </button>
             <Textarea
               value={inputValue}
               onChange={handleTyping}
@@ -304,7 +310,11 @@ export const ChatWindow = () => {
               className="min-h-[60px] flex-1"
               rows={1}
             />
-            <Button type="submit" disabled={!inputValue.trim()}>
+            <Button 
+              type="submit" 
+              disabled={!inputValue.trim()}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
               Send
             </Button>
           </form>

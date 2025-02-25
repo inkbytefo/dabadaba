@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonProps } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
@@ -92,10 +92,14 @@ const Auth = () => {
           <div className="flex justify-between items-center text-sm text-zinc-400">
             <a href="#" className="hover:underline">Forgot Password?</a>
             <Button
-              type="button"
-              variant="link"
-              className="text-yellow-500 hover:text-yellow-400 p-0"
-              onClick={() => navigate("/auth/register")}
+              {...(
+                {
+                  type: "button",
+                  variant: "link",
+                  className: "text-yellow-500 hover:text-yellow-400 p-0",
+                  onClick: () => navigate("/register"),
+                } as ButtonProps
+              )}
             >
               Create an account
             </Button>

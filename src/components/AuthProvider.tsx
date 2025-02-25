@@ -54,9 +54,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("AuthProvider useEffect triggered");
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      console.log("AuthStateChanged user:", user);
       setLoading(false);
+      console.log("AuthProvider loading state:", loading);
     });
     return () => unsubscribe();
   }, []);
@@ -64,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   const signUp = async (email: string, password: string, username: string): Promise<void> => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await createUserProfile(userCredential.user.uid, { email, username });
+        await createUserProfile(userCredential.user.uid, { email, username });
     } catch (err) {
       console.error("Sign up error:", err);
       if (err instanceof FirebaseError) {
@@ -75,8 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   };
 
   const signIn = async (email: string, password: string): Promise<void> => {
+    console.log("signIn function called", { email });
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      console.log("signIn successful");
     } catch (err) {
       console.error("Sign in error:", err);
       if (err instanceof FirebaseError) {
@@ -141,3 +146,4 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     </AuthContext.Provider>
   );
 }
+export default AuthProvider;

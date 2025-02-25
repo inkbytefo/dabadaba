@@ -5,7 +5,7 @@ import Index from "@/pages/Index";
 import Auth from "@/pages/auth/Auth";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Register } from "@/pages/auth/Register";
-import { Settings } from "@/pages/Settings";
+import { ProfileSettings } from "@/components/ProfileSettings";
 import { MessengerLayout } from "@/components/MessengerLayout";
 
 function App() {
@@ -18,7 +18,11 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route element={<RequireAuth><MessengerLayout /></RequireAuth>}>
               <Route path="/" element={<Index />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings" element={
+                <div className="flex items-center justify-center w-full h-full p-6">
+                  <ProfileSettings />
+                </div>
+              } />
             </Route>
           </Routes>
           <Toaster />

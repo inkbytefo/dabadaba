@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -92,8 +92,8 @@ export function ProfileSettings() {
   if (!user) return null;
 
   return (
-    <div className="flex justify-center w-full">
-      <Card className="w-full max-w-md rounded-3xl">
+    <div className="flex justify-center w-full bg-red-500">
+      <Card className="w-full max-w-md rounded-3xl ">
         <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
           <CardTitle className="text-xl font-bold">Settings</CardTitle>
         </CardHeader>
@@ -103,10 +103,10 @@ export function ProfileSettings() {
               <AvatarImage src="https://github.com/shadcn.png" alt="Profile picture" />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
-            <Button variant="outline" size="sm" className="rounded-full">
+            <button className="rounded-full border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3 text-sm">
               <CameraIcon className="mr-2 h-4 w-4" />
               Change Profile Picture
-            </Button>
+            </button>
           </div>
           <div className="grid gap-4">
             <div className="space-y-2">
@@ -128,9 +128,9 @@ export function ProfileSettings() {
                 placeholder="********"
                 disabled
               />
-              <Button variant="link" size="sm" className="pl-0">
+              <button className="pl-0 p-0 text-sm text-primary underline-offset-4 hover:underline">
                 Change password
-              </Button>
+              </button>
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="notifications">Notifications</Label>
@@ -152,7 +152,7 @@ export function ProfileSettings() {
               />
               {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
-            <Button type="submit" disabled={isLoading} className="rounded-full">
+            <Button type="submit" disabled={isLoading} className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90">
               {isLoading ? 'Updating...' : 'Update Username'}
             </Button>
           </form>

@@ -52,8 +52,11 @@ export const Sidebar = () => {
           <TooltipTrigger asChild>
             <Button
               onClick={item.onClick}
-              className={`h-10 w-10 rounded-md p-0 text-muted-foreground hover:text-foreground hover:bg-accent/20 mb-2 ${item.className || ''}`}
-              variant={item.className?.includes('text-red-500') ? 'destructive' : 'ghost'}
+              className={`h-10 w-10 rounded-md p-0 mb-2 ${
+                item.className?.includes('text-red-500')
+                  ? 'text-red-500 hover:bg-red-500/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/20'
+              } ${item.className || ''}`}
             >
               <item.icon className="h-5 w-5" />
             </Button>

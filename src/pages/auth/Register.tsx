@@ -72,7 +72,7 @@ const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-black py-12">
+    <div className="flex min-h-screen items-center justify-center bg-red-500 py-12">
       <Card className="w-full max-w-md space-y-6 bg-zinc-800 border border-zinc-700 rounded-2xl shadow-xl p-8">
         <div className="flex flex-col items-center gap-6">
           <div className="w-20 h-20 bg-yellow-500 rounded-full flex items-center justify-center">

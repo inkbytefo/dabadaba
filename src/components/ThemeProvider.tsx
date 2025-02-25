@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 interface ThemeContextProps {
   theme: 'light' | 'dark';
@@ -42,9 +43,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={value}>
-      <div className={`app-container ${theme}`}>
-        {children}
-      </div>
+      <TooltipProvider>
+        <div className={`app-container ${theme}`}>
+          {children}
+        </div>
+      </TooltipProvider>
     </ThemeContext.Provider>
   );
 };
@@ -56,3 +59,4 @@ export const useTheme = (): ThemeContextProps => {
   }
   return context;
 };
+export default ThemeProvider;

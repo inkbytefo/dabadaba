@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from './ui/input';
 import {
@@ -6,30 +6,37 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
+} from "@/components/ui/accordion";
+import GroupMembersList from './GroupMembersList';
 
-// Mock data - replace with real data later
-const teams = [
-  {
-    name: "Marketing Team",
-    items: ["Social Media Accounts", "Analytics Tools", "Content Calendar"]
-  },
-  {
-    name: "Design Team Keys",
-    items: ["Adobe Suite", "Figma Pro", "Stock Photos Access"]
-  },
-  {
-    name: "Development",
-    items: ["AWS Credentials", "GitHub Access", "Database Passwords"]
-  }
-];
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
-export const TeamList = () => {
+interface TeamListProps {
+  onGroupSelect: (groupId: string) => void;
+}
+
+export const TeamList: React.FC<TeamListProps> = ({ onGroupSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [teams, setTeams] = useState<{ name: string; items: string[]; id: string }[]>([]);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  const filteredTeams = teams.filter(team => 
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'groupChats'), (snapshot) => {
+      const groupChats = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name,
+        items: doc.data().items || [],
+      })) as { name: string; items: string[]; id: string }[];
+      setTeams(groupChats);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const filteredTeams = teams.filter((team) =>
     team.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    team.items.some(item => item.toLowerCase().includes(searchQuery.toLowerCase()))
+    team.items.some((item) => item.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -38,7 +45,7 @@ export const TeamList = () => {
         <div className="relative">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Secure Passwords"
+            placeholder="Gruplarda Ara"
             className="pl-9 bg-accent/5"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -47,24 +54,23 @@ export const TeamList = () => {
       </div>
       
       <div className="flex-1 overflow-y-auto">
-        <Accordion type="multiple" className="px-2">
+        <Accordion type="single" collapsible className="px-2">
           {filteredTeams.map((team, index) => (
-            <AccordionItem key={team.name} value={`team-${index}`}>
-              <AccordionTrigger className="px-2 hover:no-underline hover:bg-accent/10">
+            <AccordionItem key={team.name} value={`team-${index}`} onChange={(isOpen) => {
+              if (isOpen) {
+                setExpandedItems([`team-${index}`]);
+              } else {
+                setExpandedItems([]);
+              }
+            }}>
+              <AccordionTrigger
+                className="px-2 hover:no-underline hover:bg-accent/10"
+                onClick={() => onGroupSelect(team.id)}
+              >
                 {team.name}
               </AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-1">
-                  {team.items.map((item, itemIndex) => (
-                    <button
-                      key={itemIndex}
-                      className="w-full px-4 py-2 text-sm text-left text-muted-foreground hover:text-foreground hover:bg-accent/10 rounded-md transition-colors"
-                      onClick={() => {}}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
+              <AccordionContent className="pt-0">
+                <GroupMembersList groupId={team.id} currentUserRole="member" />
               </AccordionContent>
             </AccordionItem>
           ))}

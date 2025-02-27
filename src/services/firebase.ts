@@ -13,6 +13,7 @@ import {
   DocumentData,
   QueryDocumentSnapshot,
   deleteDoc,
+  setDoc,
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Message, User, Conversation } from '@/types/models';
@@ -74,8 +75,8 @@ export const subscribeToConversations = (
 
   return onSnapshot(q, async (snapshot) => {
     const conversations = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        const data = doc.data();
+      snapshot.docs.map(async (docSnapshot) => {
+        const data = docSnapshot.data();
         const participantIds = Object.keys(data.participants).filter(
           (id) => id !== userId
         );
@@ -85,17 +86,21 @@ export const subscribeToConversations = (
           getDoc(doc(db, 'users', id))
         );
         const participantDocs = await Promise.all(participantPromises);
-        const participants = participantDocs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        } as User));
+        const participantData = participantDocs.reduce((acc, docSnapshot) => {
+          if (docSnapshot.exists()) {
+            acc[docSnapshot.id] = true;
+          }
+          return acc;
+        }, {} as { [userId: string]: boolean });
 
         return {
-          id: doc.id,
+          id: docSnapshot.id,
           type: data.type || 'private',
-          participants,
+          participants: participantData,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
+          name: data.name,
+          photoURL: data.photoURL,
         } as Conversation;
       })
     );
@@ -151,9 +156,9 @@ export const searchUsers = async (searchTerm: string): Promise<User[]> => {
     );
     const snapshot = await getDocs(q);
     
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
+    return snapshot.docs.map((docSnapshot) => ({
+      id: docSnapshot.id,
+      ...docSnapshot.data(),
     } as User));
   } catch (error) {
     console.error('Error searching users:', error);
@@ -185,18 +190,133 @@ export const subscribeToFriendsList = (
   );
 
   return onSnapshot(q, async (snapshot) => {
-    const friendPromises = snapshot.docs.map(async (doc) => {
-      const data = doc.data();
+    const friendPromises = snapshot.docs.map(async (docSnapshot) => {
+      const data = docSnapshot.data();
       const friendId = data.users.find((id: string) => id !== userId);
       const friendDoc = await getDoc(doc(db, 'users', friendId));
-      const friendData = friendDoc.data();
-      return { id: friendId, ...friendData } as User;
+      if (friendDoc.exists()) {
+        return {
+          id: friendId,
+          ...friendDoc.data(),
+        } as User;
+      }
+      return null;
     });
 
-    const friends = await Promise.all(friendPromises);
+    const friends = (await Promise.all(friendPromises)).filter((friend): friend is User => friend !== null);
     callback(friends);
   });
 };
+
+// New functions for user management
+export const createUserProfile = async (userId: string, userData: { email: string; username: string }) => {
+  try {
+    await setDoc(doc(db, 'users', userId), {
+      id: userId,
+      displayName: userData.username,
+      email: userData.email,
+      status: 'offline',
+      searchTerms: [userData.username.toLowerCase(), userData.email.toLowerCase()],
+    } as User);
+  } catch (error) {
+    console.error('Error creating user profile:', error);
+    throw error;
+  }
+};
+
+export const updateUsername = async (userId: string, username: string) => {
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+    const userData = userDoc.data();
+    
+    await updateDoc(userRef, {
+      displayName: username,
+      searchTerms: [username.toLowerCase(), userData.email?.toLowerCase()].filter(Boolean),
+    });
+  } catch (error) {
+    console.error('Error updating username:', error);
+    throw error;
+  }
+};
+
+export const isUsernameAvailable = async (username: string): Promise<boolean> => {
+  try {
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, where('displayName', '==', username));
+    const snapshot = await getDocs(q);
+    return snapshot.empty;
+  } catch (error) {
+    console.error('Error checking username availability:', error);
+    throw error;
+  }
+};
+
+export const getUserProfile = async (userId: string): Promise<User | undefined> => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists()) {
+      return {
+        id: userDoc.id,
+        ...userDoc.data(),
+      } as User;
+    }
+    return undefined;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+export const createGroup = async (groupName: string, groupDescription: string) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+
+    const group = {
+      name: groupName,
+      description: groupDescription,
+      creatorId: user.uid,
+      createdAt: serverTimestamp(),
+      members: {
+        [user.uid]: true, // Add creator as member
+      },
+      items: [], // Initialize items as empty array
+    };
+
+    return await addDoc(collection(db, 'groupChats'), group);
+  } catch (error) {
+    console.error('Error creating group:', error);
+    throw error;
+  }
+};
+
+export const subscribeToGroupMembers = (
+  groupId: string,
+  callback: (members: User[]) => void
+) => {
+  return onSnapshot(doc(db, 'groupChats', groupId), async (docSnapshot) => {
+    if (!docSnapshot.exists()) {
+      callback([]);
+      return;
+    }
+
+    const groupData = docSnapshot.data();
+    const memberIds = Object.keys(groupData.members || {});
+    const memberPromises = memberIds.map(async (memberId) => {
+      const memberDoc = await getDoc(doc(db, 'users', memberId));
+      return memberDoc.exists() ? { id: memberId, ...memberDoc.data() } : null;
+    });
+
+    const members = (await Promise.all(memberPromises))
+      .filter(member => member !== null) as User[];
+    callback(members);
+  });
+};
+
 
 // Export functions used by other modules
 export {

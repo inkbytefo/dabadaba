@@ -8,6 +8,8 @@ export interface User {
   status?: 'online' | 'offline' | 'away';
   lastSeen?: Date;
   searchTerms?: string[];
+  username?: string;
+  role?: 'owner' | 'admin' | 'member';
 }
 
 export interface Message {

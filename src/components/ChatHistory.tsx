@@ -6,19 +6,28 @@ import { useMessages, useCurrentConversation } from "@/store/messaging";
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/types/models';
+import { useAuth } from './AuthProvider';
 
 export const ChatHistory = () => {
+  console.log("[ChatHistory] Rendering");
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { messages, loading: isLoading } = useMessages();
+  const { messages } = useMessages();
+  const { user } = useAuth();
   const { conversation: currentConversation, setConversation } = useCurrentConversation();
+
+  console.log("[ChatHistory] State:", {
+    messagesCount: messages.length,
+    hasUser: !!user,
+    currentConversationId: currentConversation?.id
+  });
 
   // Filter messages based on search query
   const filteredMessages = messages.filter(message => (
     message.content.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    message.senderName.toLowerCase().includes(debouncedSearch.toLowerCase())
+    (message.senderName && message.senderName.toLowerCase().includes(debouncedSearch.toLowerCase()))
   ));
 
   useEffect(() => {
@@ -43,6 +52,8 @@ export const ChatHistory = () => {
     const groups: { [key: string]: Message[] } = {};
     
     messages.forEach(message => {
+      if (!message.timestamp) return;
+      
       const messageDate = message.timestamp.toDate();
       let date = format(messageDate, 'MMM d, yyyy');
       
@@ -60,9 +71,9 @@ export const ChatHistory = () => {
     return groups;
   };
 
-  const messageGroups = groupMessagesByDate(filteredMessages);
-
   const getMessagePreview = (message: Message) => {
+    if (!message.content) return "No content";
+    
     switch (message.type) {
       case 'image':
         return '🖼️ Shared an image';
@@ -80,16 +91,39 @@ export const ChatHistory = () => {
   };
 
   const handleMessageClick = (message: Message) => {
+    console.log("[ChatHistory] Selecting conversation:", {
+      messageId: message.id,
+      conversationId: message.conversationId,
+      senderId: message.senderId
+    });
+
+    if (!message.conversationId || !message.senderId) {
+      console.error("[ChatHistory] Missing required message properties");
+      return;
+    }
+
     setConversation({
       id: message.conversationId,
       type: "private",
       participants: {
-        [message.senderId]: true
+        [message.senderId]: true,
+        [user?.uid || ""]: true
       },
       createdAt: message.timestamp,
       updatedAt: message.timestamp,
     });
   };
+
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full text-white/40">
+        <div className="text-center">
+          <MessageSquare className="h-12 w-12 mx-auto mb-4" />
+          <p>Please sign in to view messages</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
@@ -118,17 +152,16 @@ export const ChatHistory = () => {
       {/* Message History */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-3 py-4 space-y-6 relative min-h-[200px]">
-          {isLoading ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Loader2 className="h-8 w-8 animate-spin text-white/40" />
-            </div>
-          ) : filteredMessages.length === 0 ? (
+          {filteredMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full py-8 text-white/40">
               <MessageSquare className="h-12 w-12 mb-4" />
               <p className="text-sm">No messages found</p>
+              {searchQuery && (
+                <p className="text-xs mt-2 text-white/30">Try adjusting your search</p>
+              )}
             </div>
           ) : (
-            Object.entries(messageGroups).map(([date, messages]) => (
+            Object.entries(groupMessagesByDate(filteredMessages)).map(([date, messages]) => (
               <div key={date} className="space-y-1">
                 <div className="sticky top-0 bg-[#1e1e1e]/90 backdrop-blur-lg py-2 z-10 px-2">
                   <h3 className="text-sm font-medium text-white/50 tracking-wide">{date}</h3>
@@ -158,10 +191,10 @@ export const ChatHistory = () => {
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-baseline justify-between gap-2">
                         <p className="text-base font-medium text-white/90 truncate">
-                          {message.senderName}
+                          {message.senderName || 'Unknown User'}
                         </p>
                         <span className="text-xs text-white/40 flex-shrink-0">
-                          {format(message.timestamp.toDate(), 'HH:mm')}
+                          {message.timestamp ? format(message.timestamp.toDate(), 'HH:mm') : 'No time'}
                         </span>
                       </div>
                       <p className="text-sm text-white/50 line-clamp-2 mt-1">

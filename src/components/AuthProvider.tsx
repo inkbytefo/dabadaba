@@ -14,7 +14,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { auth } from "@/lib/firebase";
 import { createUserProfile } from "@/services/firestore/users";
-import { initializeMessaging } from "@/store/messaging";
+import { initializeMessaging, useMessagingStore } from "@/store/messaging";
 
 interface AuthContextType {
   user: User | null;
@@ -27,47 +27,97 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function useAuth() {
+// Export named functions separately for consistent HMR
+// Hooks and Components
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
+};
 
-export function RequireAuth({ children }: { children: React.ReactNode }): JSX.Element {
+export const RequireAuth = ({ children }: { children: React.ReactNode }): JSX.Element => {
   const { user, loading } = useAuth();
   const location = useLocation();
 
+  console.log("[RequireAuth] State:", { 
+    hasUser: !!user, 
+    loading, 
+    pathname: location.pathname,
+    state: location.state 
+  });
+
   if (loading) {
-    return <div>Loading...</div>;
+    console.log("[RequireAuth] Still loading, showing loading state");
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg text-white/70">Loading...</div>
+      </div>
+    );
   }
 
   if (!user) {
+    console.log("[RequireAuth] No user, redirecting to auth");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  console.log("[RequireAuth] User authenticated, rendering children");
   return <>{children}</>;
-}
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [messagingLoading, setMessagingLoading] = useState(false);
+  const loading = authLoading || messagingLoading;
 
   useEffect(() => {
-    console.log("AuthProvider useEffect triggered");
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      console.log("AuthStateChanged user:", user);
-      if (user) {
-        // Initialize messaging store when user is authenticated
-        initializeMessaging(user.uid);
+    console.log("[AuthProvider] Initial mount");
+    let cleanupMessaging: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      console.log("[AuthProvider] Auth state changed:", {
+        userId: user?.uid,
+        isAuthenticated: !!user
+      });
+
+      if (cleanupMessaging) {
+        console.log("[AuthProvider] Cleaning up previous messaging subscription");
+        cleanupMessaging();
+        cleanupMessaging = null;
       }
-      setLoading(false);
-      console.log("AuthProvider loading state:", loading);
+
+      setUser(user);
+      
+      if (user) {
+        console.log("[AuthProvider] User authenticated, initializing messaging");
+        setMessagingLoading(true);
+        try {
+          // Initialize messaging store and keep cleanup function
+          cleanupMessaging = initializeMessaging(user.uid);
+        } catch (error) {
+          console.error("[AuthProvider] Error initializing messaging:", error);
+          toast.error("Error loading messages. Please try again.");
+        }
+      }
+      
+      // Always set both loading states to false after auth state change
+      setAuthLoading(false);
+      setMessagingLoading(false);
     });
-    return () => unsubscribe();
+
+    // Cleanup function
+    return () => {
+      console.log("[AuthProvider] Cleanup effect");
+      unsubscribeAuth();
+      if (cleanupMessaging) {
+        cleanupMessaging();
+      }
+    };
   }, []);
+
+  console.log("[AuthProvider] Render:", { user: !!user, loading });
 
   const signUp = async (email: string, password: string, username: string): Promise<void> => {
     try {
@@ -111,7 +161,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       return result.user;
     } catch (err) {
       console.error("Google sign in error:", err);
-      console.error("Google sign-in error object:", err);
       if (err instanceof FirebaseError) {
         throw err;
       }

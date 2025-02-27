@@ -16,7 +16,7 @@ import {
   setDoc,
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
-import type { Message, User, Conversation } from '@/types/models';
+import type { Message, User, Conversation, UserPresence } from '@/types/models';
 
 export const sendMessage = async (messageData: Partial<Message>) => {
   try {
@@ -150,16 +150,61 @@ export const unpinMessage = async (messageId: string) => {
 export const searchUsers = async (searchTerm: string): Promise<User[]> => {
   try {
     const usersRef = collection(db, 'users');
-    const q = query(
-      usersRef,
-      where('searchTerms', 'array-contains', searchTerm.toLowerCase())
-    );
-    const snapshot = await getDocs(q);
+    const presenceRef = collection(db, 'presence');
+    const term = searchTerm.toLowerCase();
     
-    return snapshot.docs.map((docSnapshot) => ({
-      id: docSnapshot.id,
-      ...docSnapshot.data(),
-    } as User));
+    // Query by displayName and email
+    const nameQuery = query(
+      usersRef,
+      where('displayName', '>=', term),
+      where('displayName', '<=', term + '')
+    );
+    
+    const emailQuery = query(
+      usersRef,
+      where('email', '>=', term),
+      where('email', '<=', term + '')
+    );
+    
+    // Get users and their presence data
+    const [nameSnapshot, emailSnapshot] = await Promise.all([
+      getDocs(nameQuery),
+      getDocs(emailQuery)
+    ]);
+    
+    // Combine results and remove duplicates
+    const results = new Map<string, User>();
+    
+    // Get unique user IDs
+    const userIds = new Set<string>();
+    [...nameSnapshot.docs, ...emailSnapshot.docs].forEach(doc => {
+      if (!results.has(doc.id)) {
+        results.set(doc.id, {
+          id: doc.id,
+          ...doc.data(),
+          status: 'offline' // Default status
+        } as User);
+        userIds.add(doc.id);
+      }
+    });
+    
+    // Get presence data for these users
+    const presenceQuery = query(
+      presenceRef,
+      where('userId', 'in', Array.from(userIds))
+    );
+    const presenceSnapshot = await getDocs(presenceQuery);
+    
+    // Update user statuses from presence data
+    presenceSnapshot.forEach(doc => {
+      const presence = doc.data() as UserPresence;
+      const user = results.get(presence.userId);
+      if (user) {
+        user.status = presence.status;
+      }
+    });
+    
+    return Array.from(results.values());
   } catch (error) {
     console.error('Error searching users:', error);
     throw error;
@@ -271,19 +316,24 @@ export const getUserProfile = async (userId: string): Promise<User | undefined> 
   }
 };
 
-export const createGroup = async (groupName: string, groupDescription: string) => {
+export const createGroup = async (groupName: string, selectedMembers: string[]) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not authenticated');
 
+    const members = {
+      [user.uid]: true, // Add creator as member
+    };
+    // Add selected members
+    selectedMembers.forEach(memberId => {
+      members[memberId] = true;
+    });
+
     const group = {
       name: groupName,
-      description: groupDescription,
       creatorId: user.uid,
       createdAt: serverTimestamp(),
-      members: {
-        [user.uid]: true, // Add creator as member
-      },
+      members,
       items: [], // Initialize items as empty array
     };
 

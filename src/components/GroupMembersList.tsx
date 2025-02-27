@@ -33,8 +33,6 @@ const GroupMembersList: React.FC<GroupMembersListProps> = ({ groupId, currentUse
     switch (selectedTab) {
       case "online":
         return members.filter(member => member.status === "online");
-      case "admins":
-        return members.filter(member => member.role === "admin" || member.role === "owner");
       default:
         return members;
     }
@@ -104,9 +102,6 @@ const GroupMembersList: React.FC<GroupMembersListProps> = ({ groupId, currentUse
             <TabsTrigger value="online" className="flex-1">
               Online ({members.filter(m => m.status === "online").length})
             </TabsTrigger>
-            <TabsTrigger value="admins" className="flex-1">
-              Admins ({members.filter(m => m.role === "admin" || m.role === "owner").length})
-            </TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -115,7 +110,7 @@ const GroupMembersList: React.FC<GroupMembersListProps> = ({ groupId, currentUse
           filteredMembers.map((member) => (
             <Popover key={member.id}>
               <PopoverTrigger asChild>
-                 <div className="py-2 px-2 rounded-md transition-all duration-200 hover:bg-white/5 cursor-pointer relative group">
+                 <div className="py-2 px-2 rounded-md transition-all duration-200 hover:bg-white/5 cursor-pointer relative group" style={{ transform: 'scale(0.92)' }}>
                     {getStatusIndicator(member.status)}
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
@@ -180,7 +175,7 @@ const GroupMembersList: React.FC<GroupMembersListProps> = ({ groupId, currentUse
           ))
         ) : (
           <div className="flex items-center justify-center text-white/50 p-6 text-center flex-1">
-            No {selectedTab === "online" ? "online " : selectedTab === "admins" ? "admin " : ""}members found
+            No {selectedTab === "online" ? "online " : ""}members found
           </div>
         )}
       </div>

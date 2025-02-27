@@ -17,21 +17,30 @@ export const MessengerLayout = () => {
 
   // Add effect to handle initialization state
   useEffect(() => {
-    // Set a timeout to ensure we don't show the loading state forever
-    // in case there's an issue with loading conversations
-    const timer = setTimeout(() => {
-      setInitializing(false);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
-  }, []);
-
-  // When conversations are loaded or timeout occurs, stop showing initializing state
-  useEffect(() => {
-    if (conversations.length > 0 || !loading) {
+    // If user is authenticated, start loading conversations
+    if (user) {
+      // Set a timeout to ensure we don't show the loading state forever
+      // in case there's an issue with loading conversations
+      const timer = setTimeout(() => {
+        setInitializing(false);
+      }, 3000); // Increased timeout to give more time for conversations to load
+      
+      return () => clearTimeout(timer);
+    } else {
+      // If no user, we're not initializing
       setInitializing(false);
     }
-  }, [conversations, loading]);
+  }, [user]);
+
+  // When conversations are loaded or loading state changes, update initializing state
+  useEffect(() => {
+    // Only update if we're still initializing and either:
+    // 1. We have conversations, or
+    // 2. Loading has completed
+    if (initializing && (conversations.length > 0 || !loading)) {
+      setInitializing(false);
+    }
+  }, [conversations, loading, initializing]);
 
   const mainContent = location.pathname === "/" ? (
     <>

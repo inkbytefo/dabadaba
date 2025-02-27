@@ -6,26 +6,40 @@ import { MessageContent } from "./MessageContent";
 import { TypingIndicator } from "./TypingIndicator";
 import { MediaUpload } from "./MediaUpload";
 import { ReadReceipt } from "./ReadReceipt";
-import { PaperclipIcon, X, Search, Pin, PinOff, Send, Smile } from "lucide-react";
+import { 
+  PaperclipIcon, 
+  X, 
+  Search, 
+  Pin, 
+  PinOff, 
+  Send, 
+  Smile,
+  Edit,
+  Trash2,
+  MessageSquare,
+  Heart,
+  ThumbsUp
+} from "lucide-react";
 import {
-  addDoc,
   collection,
   query,
   where,
   orderBy,
   onSnapshot,
+  Timestamp,
   serverTimestamp,
   updateDoc,
   doc,
+  addDoc,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { Message as MessageType } from "@/types/models";
 import { useMessagingStore } from "@/store/messaging";
 
 export const ChatWindow = () => {
   const { pinMessage, unpinMessage } = useMessagingStore();
   const mockConversationId = "demo-conversation";
-  const currentUserId = window.auth.currentUser?.uid || 'demo-user';
+  const currentUserId = auth.currentUser?.uid || 'demo-user';
 
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -33,81 +47,22 @@ export const ChatWindow = () => {
   const [showMediaUpload, setShowMediaUpload] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [pinnedMessages, setPinnedMessages] = useState<MessageType[]>([]);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Existing useEffects and handlers...
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollArea = scrollAreaRef.current;
-      scrollArea.scrollTop = scrollArea.scrollHeight;
-    }
-  }, [messages]);
+  const reactions = {
+    "❤️": <Heart className="h-4 w-4" />,
+    "👍": <ThumbsUp className="h-4 w-4" />,
+    "😊": <Smile className="h-4 w-4" />
+  };
 
-  const markMessagesAsRead = useCallback(async (messages: MessageType[]) => {
-    const unreadMessages = messages.filter(
-      msg =>
-        msg.senderId !== currentUserId &&
-        msg.status !== 'read' &&
-        ['sent', 'delivered'].includes(msg.status)
-    );
-
-    for (const message of unreadMessages) {
-      try {
-        await updateDoc(doc(db, 'messages', message.id), {
-          status: 'read'
-        });
-      } catch (error) {
-        console.error('Error marking message as read:', error);
-      }
-    }
-  }, [currentUserId]);
-
-  useEffect(() => {
-    const pinned = messages.filter(msg => msg.isPinned);
-    setPinnedMessages(pinned);
-  }, [messages]);
-
-  useEffect(() => {
-    const q = query(
-      collection(db, 'messages'),
-      where('conversationId', '==', mockConversationId),
-      ...(searchQuery
-        ? [where('content', '>=', searchQuery), where('content', '<=', searchQuery + '')]
-        : []),
-      orderBy('timestamp', 'asc')
-    );
-
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const newMessages: MessageType[] = [];
-      const deliveredUpdates = [];
-
-      snapshot.docChanges().forEach(change => {
-        if (change.type === "added") {
-          const messageData = change.doc.data();
-          const message = {
-            id: change.doc.id,
-            ...messageData,
-            timestamp: messageData.timestamp?.toDate() || new Date(),
-          } as MessageType;
-          newMessages.push(message);
-
-          if (message.senderId !== currentUserId && message.status === 'sent') {
-            deliveredUpdates.push(
-              updateDoc(doc(db, 'messages', change.doc.id), {
-                status: 'delivered'
-              })
-            );
-          }
-        }
-      });
-
-      await Promise.all(deliveredUpdates);
-      setMessages(prevMessages => [...prevMessages, ...newMessages]);
-      markMessagesAsRead([...messages, ...newMessages]);
+  const formatTimestamp = (timestamp: Timestamp) => {
+    return timestamp.toDate().toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
     });
-
-    return () => unsubscribe();
-  }, [mockConversationId, markMessagesAsRead, currentUserId, messages, searchQuery]);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,214 +85,183 @@ export const ChatWindow = () => {
     }
   };
 
-  const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
-    setIsTyping(e.target.value.length > 0);
-  };
-
-  const handleMediaUpload = async (files: {
-    url: string;
-    type: string;
-    fileName: string;
-    fileSize: number;
-    metadata?: {
-      width?: number;
-      height?: number;
-      duration?: number;
-    };
-  }[]) => {
+  const handleEdit = async (messageId: string, newContent: string) => {
     try {
-      for (const file of files) {
-        const messageType = file.type.startsWith('image/') ? 'image' : 'video';
-
-        await addDoc(collection(db, 'messages'), {
-          conversationId: mockConversationId,
-          content: file.url,
-          type: messageType,
-          senderId: currentUserId,
-          timestamp: serverTimestamp(),
-          status: 'sending',
-          metadata: {
-            fileType: file.type,
-            fileSize: file.fileSize,
-            fileName: file.fileName,
-            ...file.metadata
-          }
-        });
-      }
-
-      setShowMediaUpload(false);
+      const messageRef = doc(db, 'messages', messageId);
+      await updateDoc(messageRef, {
+        content: newContent,
+        editedAt: serverTimestamp()
+      });
+      setEditingMessageId(null);
     } catch (error) {
-      console.error('Error sending media message:', error);
+      console.error('Error editing message:', error);
     }
   };
 
+  const handleDelete = async (messageId: string) => {
+    try {
+      const messageRef = doc(db, 'messages', messageId);
+      await updateDoc(messageRef, {
+        deleted: true,
+        deletedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+  };
+
+  const handleReaction = async (messageId: string, reaction: string) => {
+    try {
+      const messageRef = doc(db, 'messages', messageId);
+      const message = messages.find(m => m.id === messageId);
+      
+      if (!message) return;
+      
+      const reactions = { ...(message.reactions || {}) };
+      if (reactions[currentUserId] === reaction) {
+        delete reactions[currentUserId];
+      } else {
+        reactions[currentUserId] = reaction;
+      }
+      
+      await updateDoc(messageRef, { reactions });
+      setShowReactionPicker(null);
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+    }
+  };
+
+  const renderReactions = (message: MessageType) => {
+    if (!message.reactions) return null;
+    
+    const reactionCounts = Object.values(message.reactions).reduce((acc, reaction) => {
+      acc[reaction] = (acc[reaction] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return (
+      <div className="flex flex-wrap gap-1 mt-2">
+        {Object.entries(reactionCounts).map(([reaction, count]) => (
+          <span 
+            key={reaction} 
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-full 
+                     bg-white/5 text-white/80 text-sm border border-white/10"
+          >
+            {reaction} {count}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="flex-1 flex flex-col h-full relative bg-background-secondary">
-      {/* Header */}
-      <div className="glass-panel sticky top-0 z-10 px-6 py-4 border-b border-border/50">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="status-indicator status-online"></div>
-              <span className="text-sm text-messenger-secondary">Public</span>
-            </div>
-            <h2 className="text-xl font-semibold text-foreground">All PR and Media Credentials</h2>
-          </div>
-          <div className="text-sm text-messenger-secondary">
-            18 Access
-          </div>
-        </div>
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-messenger-secondary" />
-          <input
-            type="text"
-            placeholder="Search messages..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-background/50 border border-border/50 rounded-lg py-2 pl-10 pr-4 text-sm text-foreground placeholder:text-messenger-secondary focus:outline-none focus:ring-2 focus:ring-messenger-primary"
-          />
-        </div>
-      </div>
-
-      {/* Messages */}
-      <ScrollArea 
-        className="flex-1 px-6 py-4 overflow-y-auto" 
-        ref={scrollAreaRef}
-      >
-        {pinnedMessages.length > 0 && (
-          <div className="mb-6 space-y-2">
-            <h3 className="text-sm font-medium text-messenger-secondary flex items-center gap-2">
-              <Pin className="h-4 w-4" />
-              Pinned Messages
-            </h3>
-            <div className="space-y-2">
-              {pinnedMessages.map((message) => (
-                <div
-                  key={`pinned-${message.id}`}
-                  className={`flex w-full ${
-                    message.senderId === currentUserId ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  <div className="glass-panel max-w-[80%] p-3">
-                    <MessageContent
-                      content={message.content}
-                      type={message.type}
-                      className="text-sm"
-                      metadata={message.metadata}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        
-        <div className="space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex w-full ${
-                message.senderId === currentUserId ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`message-bubble ${
-                  message.senderId === currentUserId
-                    ? 'message-bubble-out'
-                    : 'message-bubble-in'
-                } group`}
-              >
-                <MessageContent
-                  content={message.content}
-                  type={message.type}
-                  className="text-sm"
-                  metadata={message.metadata}
+    <div className="flex-1 flex flex-col h-full relative bg-[#1e1e1e]">
+      {messages.map((message) => (
+        <div
+          key={message.id}
+          className={`flex w-full ${
+            message.senderId === currentUserId ? 'justify-end' : 'justify-start'
+          }`}
+        >
+          <div className={`message-bubble group relative ${
+            message.senderId === currentUserId
+              ? 'bg-blue-500/90 backdrop-blur-sm text-white border-white/20'
+              : 'bg-black/30 backdrop-blur-sm text-white/90 border-white/10'
+          }`}>
+            {editingMessageId === message.id ? (
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const input = e.currentTarget.querySelector('input') as HTMLInputElement;
+                handleEdit(message.id, input.value);
+              }}>
+                <input
+                  type="text"
+                  defaultValue={message.content}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white"
+                  autoFocus
                 />
-                <div className="text-xs text-messenger-secondary mt-1 flex items-center gap-1 justify-between">
-                  <div className="flex items-center gap-1">
-                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    {message.senderId === currentUserId && (
-                      <ReadReceipt status={message.status} />
-                    )}
-                  </div>
-                  <button
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-full p-1 hover:bg-messenger-primary/10 text-messenger-secondary"
-                    onClick={() => {
-                      if (message.isPinned) {
-                        unpinMessage(message.id);
-                      } else {
-                        pinMessage(message.id);
-                      }
-                    }}
-                  >
-                    {message.isPinned ? (
-                      <PinOff className="h-3 w-3" />
-                    ) : (
-                      <Pin className="h-3 w-3" />
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-
-      {/* Input Area */}
-      <div className="sticky bottom-0 left-0 right-0">
-        <div className="glass-panel mx-4 mb-4 p-3 border border-border/50 rounded-2xl">
-          {isTyping && <TypingIndicator conversationId={mockConversationId} />}
-
-          {showMediaUpload ? (
-            <div className="relative">
-              <button
-                className="absolute top-2 right-2 z-10 rounded-full p-2 hover:bg-messenger-primary/10 text-messenger-secondary"
-                onClick={() => setShowMediaUpload(false)}
-              >
-                <X className="h-4 w-4" />
-              </button>
-              <MediaUpload
-                onUpload={handleMediaUpload}
-                onCancel={() => setShowMediaUpload(false)}
+              </form>
+            ) : (
+              <MessageContent
+                content={message.content}
+                type={message.type}
+                className="text-sm"
+                metadata={message.metadata}
               />
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex items-end gap-2">
-              <button
-                type="button"
-                className="rounded-full p-2 hover:bg-messenger-primary/10 text-messenger-secondary"
-                onClick={() => setShowMediaUpload(true)}
-              >
-                <PaperclipIcon className="h-5 w-5" />
-              </button>
-              <div className="flex-1 relative">
-                <Textarea
-                  value={inputValue}
-                  onChange={handleTyping}
-                  placeholder="Type a message..."
-                  className="chat-input min-h-[44px] max-h-[120px] resize-none pr-12"
-                  rows={1}
-                />
+            )}
+
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center gap-1">
                 <button
-                  type="button"
-                  className="absolute right-2 bottom-2 rounded-full p-1.5 hover:bg-messenger-primary/10 text-messenger-secondary"
+                  onClick={() => setShowReactionPicker(message.id)}
+                  className="p-1.5 rounded-full hover:bg-white/10 text-white/60"
                 >
-                  <Smile className="h-5 w-5" />
+                  <MessageSquare className="h-4 w-4" />
                 </button>
+                {message.senderId === currentUserId && (
+                  <>
+                    <button
+                      onClick={() => setEditingMessageId(message.id)}
+                      className="p-1.5 rounded-full hover:bg-white/10 text-white/60"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(message.id)}
+                      className="p-1.5 rounded-full hover:bg-white/10 text-white/60"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
               </div>
-              <Button
-                type="submit"
-                size="icon"
-                disabled={!inputValue.trim()}
-                className="bg-messenger-primary hover:bg-messenger-primary/90 text-white rounded-full h-11 w-11 flex-shrink-0"
+            </div>
+
+            {showReactionPicker === message.id && (
+              <div className="absolute -top-10 right-0 flex items-center gap-1 p-2 
+                          rounded-lg bg-black/50 backdrop-blur-sm border border-white/10">
+                {Object.entries(reactions).map(([emoji, icon]) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(message.id, emoji)}
+                    className="p-1.5 rounded-full hover:bg-white/10 text-white/60"
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {renderReactions(message)}
+
+            <div className="text-xs text-white/50 mt-1 flex items-center gap-1 justify-between">
+              <div className="flex items-center gap-1">
+                {formatTimestamp(message.timestamp)}
+                {message.senderId === currentUserId && (
+                  <ReadReceipt status={message.status} />
+                )}
+              </div>
+              <button
+                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity 
+                         rounded-full p-1 hover:bg-white/10 text-white/60"
+                onClick={() => {
+                  if (message.isPinned) {
+                    unpinMessage(message.id);
+                  } else {
+                    pinMessage(message.id);
+                  }
+                }}
               >
-                <Send className="h-5 w-5" />
-              </Button>
-            </form>
-          )}
+                {message.isPinned ? (
+                  <PinOff className="h-3 w-3" />
+                ) : (
+                  <Pin className="h-3 w-3" />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 };

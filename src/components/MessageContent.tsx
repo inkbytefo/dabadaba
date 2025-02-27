@@ -74,7 +74,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
         <img
           src={content}
           alt={metadata?.fileName || 'Image'}
-          className="max-w-full rounded-xl"
+          className="max-w-full rounded-xl border border-white/10 hover:border-white/20 transition-all shadow-lg"
           style={{
             maxHeight: '300px',
             width: 'auto',
@@ -82,7 +82,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
           }}
         />
         {metadata && (
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-white/60">
             {metadata.fileName && <div>{metadata.fileName}</div>}
             <div className="space-x-2">
               {metadata.dimensions && (
@@ -104,14 +104,14 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
         <video
           src={content}
           controls
-          className="max-w-full rounded-xl"
+          className="max-w-full rounded-xl border border-white/10 hover:border-white/20 transition-all shadow-lg"
           style={{
             maxHeight: '300px',
             width: 'auto'
           }}
         />
         {metadata && (
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-white/60">
             {metadata.fileName && <div>{metadata.fileName}</div>}
             <div className="space-x-2">
               {metadata.dimensions && (
@@ -133,13 +133,13 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
   if (type === 'audio') {
     return (
       <div className={`space-y-2 ${className}`}>
-        <div className="flex items-center gap-3 p-4 bg-white/5 rounded-xl">
-          <AudioLines className="h-8 w-8 text-blue-400" />
+        <div className="flex items-center gap-3 p-4 bg-black/30 backdrop-blur-sm rounded-xl border border-white/10">
+          <AudioLines className="h-8 w-8 text-blue-500" />
           <div className="flex-1 min-w-0">
-            <div className="text-sm truncate">
+            <div className="text-sm truncate text-white/90">
               {metadata?.fileName || 'Audio file'}
             </div>
-            <div className="text-xs text-gray-400 space-x-2">
+            <div className="text-xs text-white/60 space-x-2">
               {metadata?.duration && (
                 <span>{formatDuration(metadata.duration)}</span>
               )}
@@ -161,15 +161,15 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
           href={content}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+          className="flex items-center gap-3 p-4 bg-black/30 backdrop-blur-sm rounded-xl border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all"
         >
-          <FileIcon className="h-8 w-8 text-blue-400" />
+          <FileIcon className="h-8 w-8 text-blue-500" />
           <div className="flex-1 min-w-0">
-            <div className="text-sm truncate">
+            <div className="text-sm truncate text-white/90">
               {metadata?.fileName || 'File'}
             </div>
             {metadata?.fileSize && (
-              <div className="text-xs text-gray-400">
+              <div className="text-xs text-white/60">
                 {formatFileSize(metadata.fileSize)}
               </div>
             )}
@@ -186,16 +186,16 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
           href={linkPreview.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex flex-col rounded-xl border border-white/20 hover:border-white/30 transition-colors overflow-hidden"
+          className="group flex flex-col rounded-xl border border-white/10 hover:border-white/20 transition-all overflow-hidden bg-black/30 backdrop-blur-sm"
         >
           {linkPreview.image && (
             <img src={linkPreview.image} alt={linkPreview.title} className="w-full h-auto object-cover aspect-video" />
           )}
-          <div className="p-4">
-            <div className="text-sm font-semibold group-hover:underline underline-offset-2">
+          <div className="p-4 hover:bg-white/5 transition-colors">
+            <div className="text-sm font-semibold text-white/90 group-hover:underline underline-offset-2">
               {linkPreview.title}
             </div>
-            <div className="text-xs text-gray-400 line-clamp-2">
+            <div className="text-xs text-white/60 line-clamp-2">
               {linkPreview.description}
             </div>
           </div>
@@ -205,7 +205,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ content, type, classNam
   }
 
   return (
-    <div className={className}>
+    <div className={`text-white/90 leading-relaxed ${className}`}>
       {content}
     </div>
   );

@@ -21,54 +21,58 @@ export default {
     },
     extend: {
       colors: {
-        border: "#413C3C", // Black Olive
-        input: "#454650", // Outer Space
-        ring: "#3D505B", // Outer Space (accent)
+        border: "rgb(229 231 235 / 0.1)", // Subtle border
+        input: "#2A2D3E", // Dark input background
+        ring: "#4F46E5", // Primary accent
         background: {
-          DEFAULT: "#151A25", // Eerie Black
-          secondary: "#454650", // Outer Space
+          DEFAULT: "#1A1C2A", // Dark background
+          secondary: "#2A2D3E", // Slightly lighter background
         },
-        foreground: { // Updated foreground colors for better contrast and accessibility
-          DEFAULT: "#E0E0E0", // Light Gray
-          secondary: "#9CA3AF", // Light Granite Gray
+        foreground: {
+          DEFAULT: "#E5E7EB", // Light text
+          secondary: "#9CA3AF", // Secondary text
         },
         muted: {
-          DEFAULT: "#413C3C", // Black Olive
-          foreground: "#9CA3AF", // Light Granite Gray (updated)
+          DEFAULT: "#374151",
+          foreground: "#9CA3AF",
         },
-        "messenger-primary": "#3D505B", // Outer Space (accent)
-        "messenger-secondary": "#5D6165", // Granite Gray
+        "messenger-primary": "#4F46E5", // Primary accent
+        "messenger-secondary": "#6366F1", // Secondary accent
         primary: {
-          DEFAULT: "#3D505B", // Outer Space (accent)
+          DEFAULT: "#4F46E5",
           foreground: "#FFFFFF",
         },
         secondary: {
-          DEFAULT: "#454650", // Outer Space
-          foreground: "#5D6165", // Granite Gray
+          DEFAULT: "#2A2D3E",
+          foreground: "#E5E7EB",
         },
         popover: {
-          DEFAULT: "#151A25", // Eerie Black
+          DEFAULT: "#1A1C2A",
           foreground: "#FFFFFF",
         },
         card: {
-          DEFAULT: "#151A25", // Eerie Black
+          DEFAULT: "#2A2D3E",
           foreground: "#FFFFFF",
         },
-        "status-online": '#22C55E', // Live green for online status
-        "status-away": '#F59E0B', // Orange for away status
-        "status-offline": '#6B7280', // Neutral gray for offline status
+        "status-online": '#10B981', // Success green
+        "status-away": '#F59E0B', // Warning yellow
+        "status-offline": '#6B7280', // Neutral gray
+        accent: {
+          DEFAULT: "#4F46E5",
+          foreground: "#FFFFFF",
+        },
       },
       fontFamily: {
-        sans: ["Inter", "Roboto", ...defaultTheme.fontFamily.sans],
+        sans: ["Inter", ...defaultTheme.fontFamily.sans],
       },
       fontWeight: {
         bold: "700",
       },
       borderRadius: {
-        DEFAULT: "8px",
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        DEFAULT: "0.5rem",
+        lg: "0.75rem",
+        md: "0.5rem",
+        sm: "0.25rem",
       },
       spacing: {
         "1": "4px",
@@ -112,14 +116,19 @@ export default {
         "status-change": "status-change 300ms ease-out",
         "panel-slide": "panel-slide 0.5s ease-out",
       },
+      boxShadow: {
+        'card': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        'hover': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+      },
     },
     fontSize: {
-      "3xl": "30px",
-      "2xl": "24px",
-      "xl": "20px",
-      "base": "16px",
-      "sm": "14px",
-      "xs": "12px",
+      "3xl": ["1.875rem", { lineHeight: "2.25rem" }],
+      "2xl": ["1.5rem", { lineHeight: "2rem" }],
+      "xl": ["1.25rem", { lineHeight: "1.75rem" }],
+      "lg": ["1.125rem", { lineHeight: "1.75rem" }],
+      "base": ["1rem", { lineHeight: "1.5rem" }],
+      "sm": ["0.875rem", { lineHeight: "1.25rem" }],
+      "xs": ["0.75rem", { lineHeight: "1rem" }],
     },
   },
   plugins: [tailwindAnimate],

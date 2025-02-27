@@ -3,9 +3,10 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import type { Message, Conversation, User, Channel } from '@/types/models';
 import * as FirebaseService from '@/services/firebase';
 
-interface MessagingState {
+export interface MessagingState {
   conversations: Conversation[];
   currentConversation: Conversation | null;
+  userStatus: string;
   messages: Message[];
   channels: Channel[];
   currentChannel: Channel | null;
@@ -27,6 +28,7 @@ export const useMessagingStore = create<MessagingState>()(
   devtools(
     subscribeWithSelector((set, get) => ({
       conversations: [],
+      userStatus: 'Online',
       currentConversation: null,
       messages: [],
       channels: [],

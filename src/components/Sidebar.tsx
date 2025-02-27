@@ -76,7 +76,7 @@ export const Sidebar = () => {
     { 
       icon: Settings, 
       label: 'Settings', 
-      onClick: () => setShowAppSettings(true), // Open AppSettings dialog
+      onClick: () => setShowAppSettings(true),
       className: 'mt-auto'
     },
     { 
@@ -89,46 +89,55 @@ export const Sidebar = () => {
 
   return (
     <>
-      <div className="w-16 h-screen bg-background flex flex-col items-center py-4 border-r border-border/50">
-        {navItems.map((item) => (
-          <Tooltip key={item.label} delayDuration={0}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={item.onClick}
-                className={`
-                  h-10 w-10 rounded-lg p-0 mb-2
-                  ${item.className?.includes('text-red-500') 
-                    ? 'text-red-500 hover:bg-red-500/10' 
-                    : 'text-messenger-secondary hover:text-messenger-primary hover:bg-messenger-primary/10'
-                  } 
-                  ${item.className || ''}
-                `}
+      <div className="w-16 h-full bg-card rounded-l-lg shadow-card flex flex-col items-center py-4">
+        <div className="flex flex-col items-center space-y-2 mb-8">
+          <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+            <User className="h-5 w-5 text-accent" />
+          </div>
+        </div>
+        
+        <div className="flex-1 flex flex-col items-center space-y-2">
+          {navItems.map((item, index) => (
+            <Tooltip key={item.label} delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={item.onClick}
+                  className={`
+                    h-10 w-10 rounded-lg p-0
+                    ${item.className?.includes('text-red-500') 
+                      ? 'text-red-500 hover:bg-red-500/10' 
+                      : 'text-foreground-secondary hover:text-accent hover:bg-accent/10'
+                    } 
+                    ${item.className || ''}
+                    ${index === navItems.length - 2 ? 'mt-auto' : ''}
+                  `}
+                >
+                  <item.icon className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent 
+                side="right"
+                className="bg-card text-foreground shadow-card"
               >
-                <item.icon className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent 
-              side="right"
-              className="bg-background-secondary text-foreground border border-border/50"
-            >
-              <p>{item.label}</p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
+                <p>{item.label}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
       </div>
 
       <ProfileSettings 
         open={showSettings} 
         onOpenChange={setShowSettings}
       />
-      <AppSettings // Render AppSettings as dialog
+      <AppSettings
         open={showAppSettings}
         onOpenChange={setShowAppSettings}
       />
       <Dialog open={showTeams} onOpenChange={setShowTeams}>
-        <DialogContent className="max-w-none p-0">
+        <DialogContent className="sm:max-w-[600px] p-0">
           <TeamList />
         </DialogContent>
       </Dialog>

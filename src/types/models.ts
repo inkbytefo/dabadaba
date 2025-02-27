@@ -1,30 +1,27 @@
+import { Timestamp } from 'firebase/firestore';
+
 export interface User {
   id: string;
   displayName: string;
-  username: string; // Added username field
   email: string;
   photoURL?: string;
-  status: 'online' | 'offline' | 'away';
-  lastSeen: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  status?: 'online' | 'offline' | 'away';
+  lastSeen?: Date;
+  searchTerms?: string[];
 }
 
 export interface Message {
   id: string;
-  conversationId?: string;
-  channelId?: string;
-  senderId: string;
+  conversationId: string;
   content: string;
-  type: 'text' | 'image' | 'video' | 'file' | 'audio';
-  timestamp: Date;
-  editedAt?: Date;
-  replyTo?: string;
-  reactions: { [userId: string]: string };
+  type: 'text' | 'markdown' | 'image' | 'video' | 'file' | 'audio';
+  senderId: string;
+  senderName: string;
+  timestamp: Timestamp;
   status: 'sending' | 'sent' | 'delivered' | 'read';
   isPinned?: boolean;
-  pinnedAt?: Date;
-  pinnedBy?: string;
+  pinnedAt?: Timestamp | null;
+  pinnedBy?: string | null;
   metadata?: {
     fileType?: string;
     fileSize?: number;
@@ -33,78 +30,58 @@ export interface Message {
       width: number;
       height: number;
     };
-    duration?: number; // For audio/video
-    thumbnailUrl?: string;
+    duration?: number;
   };
+  reactions?: {
+    [userId: string]: string;
+  };
+  editedAt?: Timestamp;
 }
 
 export interface Conversation {
   id: string;
   type: 'private' | 'group';
-  participants: { [userId: string]: boolean };
-  lastMessage?: {
-    content: string;
-    senderId: string;
-    timestamp: Date;
-    type: Message['type'];
+  participants: {
+    [userId: string]: boolean;
   };
-  createdAt: Date;
-  updatedAt: Date;
-  name?: string; // For group conversations 
-  photoURL?: string; // For group conversations
+  lastMessage?: string;
+  lastMessageTimestamp?: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  name?: string; // For group chats
+  photoURL?: string; // For group chats
 }
 
 export interface Channel {
   id: string;
   name: string;
   description?: string;
-  type: 'text' | 'voice' | 'video';
-  members: { [userId: string]: boolean };
-  ownerId: string;
-  permissions: {
-    sendMessages: boolean;
-    embedLinks: boolean;
-    attachFiles: boolean;
-    addMembers: boolean;
-    removeMembers: boolean;
+  createdBy: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  members: {
+    [userId: string]: 'owner' | 'admin' | 'member';
   };
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface VoiceState {
-  id: string;
-  userId: string;
-  channelId: string;
-  muted: boolean;
-  deafened: boolean;
-  speaking: boolean;
-  timestamp: Date;
-}
-
-export interface VoiceChannel extends Channel {
-  type: 'voice';
-  bitrate: number;
-  userLimit?: number;
-  currentUsers: { [userId: string]: VoiceState };
-}
-
-export interface VideoChannel extends Channel {
-  type: 'video';
-  quality: 'auto' | '720p' | '1080p';
-  layout: 'grid' | 'spotlight' | 'sidebar';
-  currentParticipants: { [userId: string]: {
-    camera: boolean;
-    microphone: boolean;
-    screenshare: boolean;
-    timestamp: Date;
-  }};
 }
 
 export interface FriendRequest {
   id: string;
-  senderId: string;
-  receiverId: string;
+  fromUserId: string;
+  toUserId: string;
   status: 'pending' | 'accepted' | 'rejected';
-  createdAt: Date;
+  timestamp: Timestamp;
 }
+
+export interface UserPresence {
+  userId: string;
+  status: 'online' | 'offline' | 'away';
+  lastSeen: Timestamp;
+  typing?: {
+    [conversationId: string]: boolean;
+  };
+}
+
+export type MessageContentType = 'text' | 'markdown' | 'image' | 'video' | 'file' | 'audio';
+export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
+export type UserRole = 'owner' | 'admin' | 'member';
+export type UserStatus = 'online' | 'offline' | 'away';

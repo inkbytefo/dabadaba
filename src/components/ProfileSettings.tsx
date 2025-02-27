@@ -9,7 +9,7 @@ import {
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useAuth } from './AuthProvider';
-import { updateUsername, isUsernameAvailable, getUserProfile } from '@/services/firebase';
+import { updateUsername, isUsernameAvailable, getUserProfile } from '@/services/firestore/users';
 import type { User } from '@/types/models';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from './ui/switch';

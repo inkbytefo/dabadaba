@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { FriendRequestButton } from "./FriendRequestButton";
-import { searchUsers } from "@/services/firebase";
+import { searchUsers } from "@/services/firestore/users";
 import { useDebounce } from "@/hooks/use-debounce";
 
 export const UserSearch = () => {

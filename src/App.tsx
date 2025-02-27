@@ -1,15 +1,15 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider, RequireAuth } from "@/components/AuthProvider";
-import Index from "@/pages/Index";
 import Auth from "@/pages/auth/Auth";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Register } from "@/pages/auth/Register";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { MessengerLayout } from "@/components/MessengerLayout";
+import { ChatView } from "@/components/MessengerLayout/ChatView";
 import { useState } from 'react';
 import { ForgotPassword } from "@/pages/auth/ForgotPassword";
-import AppSettings from "@/pages/AppSettings"; // Import AppSettings
+import AppSettings from "@/pages/AppSettings";
 
 function App() {
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
@@ -23,9 +23,18 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/register" element={<Register />} />
             <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            <Route element={<RequireAuth><MessengerLayout /></RequireAuth>}>
-              <Route path="/" element={<Index />} />
-              <Route path="/settings" element={
+            <Route
+              path="/"
+              element={
+                <RequireAuth>
+                  <MessengerLayout />
+                </RequireAuth>
+              }
+            >
+              {/* Add this index route */}
+              <Route index element={<ChatView />} />
+              
+              <Route path="settings" element={
                 <div className="flex items-center justify-center w-full h-full p-6">
                   <ProfileSettings
                     open={isProfileSettingsOpen}

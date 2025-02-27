@@ -1,10 +1,5 @@
-import { AuthProvider } from "@/components/AuthProvider";
-import { MessengerLayout } from "@/components/MessengerLayout";
+import { Navigate } from "react-router-dom";
 
 export default function Index() {
-  return (
-    <AuthProvider>
-      <MessengerLayout />
-    </AuthProvider>
-  );
+  return <Navigate to="/" replace />;
 }

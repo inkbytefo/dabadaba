@@ -9,11 +9,12 @@ import {
   User,
   AuthError,
 } from "firebase/auth";
-import { createUserProfile } from '@/services/firebase';
-import { auth } from "@/lib/firebase";
 import { FirebaseError } from "firebase/app";
 import { Navigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
+import { auth } from "@/lib/firebase";
+import { createUserProfile } from "@/services/firestore/users";
+import { initializeMessaging } from "@/store/messaging";
 
 interface AuthContextType {
   user: User | null;
@@ -58,6 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       console.log("AuthStateChanged user:", user);
+      if (user) {
+        // Initialize messaging store when user is authenticated
+        initializeMessaging(user.uid);
+      }
       setLoading(false);
       console.log("AuthProvider loading state:", loading);
     });
@@ -67,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   const signUp = async (email: string, password: string, username: string): Promise<void> => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await createUserProfile(userCredential.user.uid, { email, username });
+      await createUserProfile(userCredential.user);
     } catch (err) {
       console.error("Sign up error:", err);
       if (err instanceof FirebaseError) {
@@ -93,25 +98,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
 
   const signUpWithGoogle = async (): Promise<User> => {
     try {
-      console.log("Google Sign-in started"); // Added log
+      console.log("Google Sign-in started");
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       
-      console.log("Calling signInWithPopup"); // Added log
+      console.log("Calling signInWithPopup");
       const result = await signInWithPopup(auth, provider);
-      console.log("signInWithPopup successful", result); // Added log
+      console.log("signInWithPopup successful", result);
 
-      await createUserProfile(result.user.uid, {
-        email: result.user.email || '',
-        displayName: result.user.displayName || 'User',
-        photoURL: result.user.photoURL || '',
-        username: result.user.email?.split('@')[0] || 'defaultusername', // Generate default username
-      });
+      await createUserProfile(result.user);
       
       return result.user;
     } catch (err) {
       console.error("Google sign in error:", err);
-      console.error("Google sign-in error object:", err); // Log error object
+      console.error("Google sign-in error object:", err);
       if (err instanceof FirebaseError) {
         throw err;
       }
@@ -146,4 +146,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
     </AuthContext.Provider>
   );
 }
+
 export default AuthProvider;

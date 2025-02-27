@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/components/AuthProvider";
-import { isUsernameAvailable } from "@/services/firebase";
+import { isUsernameAvailable } from "@/services/firestore/users";
 import { toast } from "sonner";
 import { FirebaseError } from "firebase/app";
 import { Card } from "@/components/ui/card";

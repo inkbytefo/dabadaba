@@ -5,10 +5,11 @@ import { Search } from "lucide-react";
 import { UserCard } from "./UserCard";
 import { useMessagingStore } from "@/store/messaging";
 import type { User } from "@/types/models";
-import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { collection, query, where, onSnapshot, Timestamp, limit, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/components/AuthProvider";
-import { subscribeToFriendsList, searchUsers } from "../services/firebase";
+import { subscribeToFriendsList } from "@/services/firestore/friends";
+import { searchUsers } from "@/services/firestore/users";
 
 export const UserList = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -28,25 +29,33 @@ export const UserList = () => {
       setFriends(friendsList);
     });
 
-    const q = query(
-      collection(db, "users"),
-      where("id", "!=", currentUserId)
-    );
-
-    const unsubscribeUsers = onSnapshot(q, (snapshot) => {
-      const updatedUsers = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as User[];
-      setUsers(updatedUsers);
-    });
-
     return () => {
       unsubscribe();
-      unsubscribeUsers();
     };
   }, [currentUserId]);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!currentUserId) return;
+      
+      try {
+        const q = query(
+          collection(db, "users"),
+          where("id", "!=", currentUserId),
+          limit(10)
+        );
+        const snapshot = await getDocs(q);
+        const updatedUsers = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as User[];
+        setUsers(updatedUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
 
+    fetchUsers();
+  }, [currentUserId]);
   const handleSearch = async (term: string) => {
     setSearchTerm(term);
     setIsSearching(true);

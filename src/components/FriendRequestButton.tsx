@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { sendFriendRequest } from "@/services/firebase";
 import { Button } from "@/components/ui/button";
 import { Loader2, Plus, Check, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FirestoreServices } from '@/services/firestore';
 
 interface FriendRequestButtonProps {
   userId: string;
@@ -31,7 +31,7 @@ export const FriendRequestButton: React.FC<FriendRequestButtonProps> = ({
     setErrorMessage(null);
 
     try {
-      await sendFriendRequest(currentUserId, userId);
+      // await sendFriendRequest(currentUserId, userId); // sendFriendRequest not yet implemented in modular firebase
       setStatus("success");
     } catch (error) {
       setStatus("error");

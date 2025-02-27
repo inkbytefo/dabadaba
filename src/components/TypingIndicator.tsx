@@ -1,18 +1,21 @@
-import React from "react";
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-interface TypingIndicatorProps {
-  conversationId: string;
+export interface TypingIndicatorProps {
+  className?: string;
 }
 
-export const TypingIndicator = ({ conversationId }: TypingIndicatorProps) => {
+export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ className }) => {
   return (
-    <div className="flex items-center space-x-2 text-sm text-gray-500 animate-pulse">
-      <div className="flex space-x-1">
-        <div className="h-2 w-2 rounded-full bg-messenger-primary"></div>
-        <div className="h-2 w-2 rounded-full bg-messenger-primary animation-delay-200"></div>
-        <div className="h-2 w-2 rounded-full bg-messenger-primary animation-delay-400"></div>
+    <div className={cn("flex items-center gap-1", className)}>
+      <div className="flex items-center gap-1">
+        <span className="text-sm text-white/50">Typing</span>
+        <div className="flex gap-1">
+          <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce [animation-delay:-0.3s]" />
+          <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce [animation-delay:-0.2s]" />
+          <span className="w-1 h-1 bg-white/50 rounded-full animate-bounce [animation-delay:-0.1s]" />
+        </div>
       </div>
-      <span>Someone is typing...</span>
     </div>
   );
 };

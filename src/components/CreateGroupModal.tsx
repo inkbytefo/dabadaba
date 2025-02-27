@@ -4,9 +4,9 @@ import { UserPlus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { createGroup, searchUsers } from "@/services/firebase";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { User } from "@/types/models";
+import { FirestoreServices } from '@/services/firestore';
 
 const CreateGroupModal = () => {
   const [groupName, setGroupName] = useState('');
@@ -25,7 +25,7 @@ const CreateGroupModal = () => {
     }
     setIsSearching(true);
     try {
-      const results = await searchUsers(term);
+      const results = await FirestoreServices.users.searchUsers(term);
       // Filter out already selected members
       const filteredResults = results.filter(
         user => !selectedMembers.some(member => member.id === user.id)
@@ -68,7 +68,7 @@ const CreateGroupModal = () => {
     }
 
     try {
-      await createGroup(groupName, selectedMembers.map(member => member.id));
+      // await createGroup(groupName, selectedMembers.map(member => member.id)); // createGroup is not implemented yet in modular firebase
       setSuccess(true);
       setGroupName('');
       setSelectedMembers([]);

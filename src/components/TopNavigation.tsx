@@ -10,7 +10,8 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { ProfileSettings } from './ProfileSettings';
 import AppSettings from '@/pages/AppSettings';
 import { TeamList } from './TeamList';
@@ -26,7 +27,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 
-export const TopNavigation = ({ onViewChange }: { onViewChange: (view: 'chat' | 'groups') => void }) => {
+interface TopNavigationProps {
+  onViewChange: (view: 'chat' | 'groups') => void;
+  unreadNotifications?: number;
+  missedCalls?: number;
+}
+
+export const TopNavigation = ({ 
+  onViewChange, 
+  unreadNotifications = 0, 
+  missedCalls = 0 
+}: TopNavigationProps) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -83,40 +94,55 @@ export const TopNavigation = ({ onViewChange }: { onViewChange: (view: 'chat' | 
 
   return (
     <>
-      <div className="h-16 bg-[#1e1e1e]/80 border-b border-white/10 px-6 flex items-center justify-between backdrop-blur-lg shadow-sm">
+      <div className="h-16 bg-[#1e1e1e]/80 border-b border-white/10 px-3 md:px-6 flex items-center justify-between backdrop-blur-lg shadow-sm transition-all duration-200">
         {/* Left - Logo/Brand */}
         <div className="flex items-center">
-          <h1 className="text-xl font-semibold text-white/90 tracking-wide">
-            XCORD
-            <span className="text-xs ml-2 text-white/50 font-normal">application</span>
+          <h1 className="text-xl font-semibold text-white/90 tracking-wide flex items-center">
+            <span className="hidden md:inline">XCORD</span>
+            <span className="md:hidden">X</span>
+            <span className="text-xs ml-2 text-white/50 font-normal hidden md:inline">application</span>
           </h1>
         </div>
 
         {/* Center - Navigation */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 md:gap-3">
           {navItems.map((item) => (
             <Button
               key={item.label}
               variant="ghost"
               onClick={item.onClick}
-              className={`flex items-center gap-2.5 transition-all duration-200
+              className={`flex items-center gap-2.5 transition-all duration-200 relative
                        ${item.isActive 
                          ? 'text-white bg-white/15 shadow-inner' 
                          : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+              aria-label={item.label}
+              title={item.label}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="hidden md:inline">{item.label}</span>
+              {item.label === 'Notifications' && unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                  {unreadNotifications}
+                </span>
+              )}
+              {item.label === 'Calls' && missedCalls > 0 && (
+                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
+                  {missedCalls}
+                </span>
+              )}
             </Button>
           ))}
         </div>
 
         {/* Right - User Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 md:gap-3">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setShowAppSettings(true)}
             className="text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-200"
+            aria-label="Settings"
+            title="Settings"
           >
             <Settings className="h-5 w-5" />
           </Button>

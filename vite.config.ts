@@ -7,19 +7,16 @@ export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   
   return {
-    server: {
-      host: "::",
-      port: 8080,
-      // Add strict port to prevent random port assignment
-      strictPort: true,
-      // Add CORS configuration
-      cors: true,
-    },
+  server: {
+    host: "::",
+    port: 3000,
+    // Add strict port to prevent random port assignment
+    strictPort: true,
+    // Add CORS configuration
+    cors: true,
+  },
     plugins: [
-      react({
-        // Enable React Fast Refresh
-        fastRefresh: true,
-      }),
+      react(),
       mode === 'development' && componentTagger(),
     ].filter(Boolean),
     resolve: {
@@ -47,16 +44,7 @@ export default defineConfig(({ command, mode }) => {
         'react-dom'
       ],
     },
-    define: {
-      'process.env': {
-        VITE_FIREBASE_API_KEY: JSON.stringify(env.VITE_FIREBASE_API_KEY),
-        VITE_FIREBASE_AUTH_DOMAIN: JSON.stringify(env.VITE_FIREBASE_AUTH_DOMAIN),
-        VITE_FIREBASE_PROJECT_ID: JSON.stringify(env.VITE_FIREBASE_PROJECT_ID),
-        VITE_FIREBASE_STORAGE_BUCKET: JSON.stringify(env.VITE_FIREBASE_STORAGE_BUCKET),
-        VITE_FIREBASE_MESSAGING_SENDER_ID: JSON.stringify(env.VITE_FIREBASE_MESSAGING_SENDER_ID),
-        VITE_FIREBASE_APP_ID: JSON.stringify(env.VITE_FIREBASE_APP_ID),
-        VITE_FIREBASE_MEASUREMENT_ID: JSON.stringify(env.VITE_FIREBASE_MEASUREMENT_ID)
-      }
-    }
+  // Environment variables are automatically handled by Vite
+  // when using import.meta.env, no need to define them here
   };
 });

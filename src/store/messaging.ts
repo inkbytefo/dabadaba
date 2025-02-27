@@ -1,18 +1,27 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
-import type { Message, Conversation, User, Channel } from '@/types/models';
-import * as FirebaseService from '@/services/firebase';
+import type { Message, MessageData, Conversation, User, Channel, TimestampField } from '@/types/models';
+import { auth } from '@/lib/firebase';
+import { Auth, User as FirebaseUser } from 'firebase/auth';
+import {
+  collection,
+  doc,
+  serverTimestamp,
+  DocumentReference,
+  DocumentData,
+  FieldValue
+} from 'firebase/firestore';
+import { 
+  subscribeToMessages, 
+  sendMessage, 
+  editMessage, 
+  deleteMessage, 
+  updateMessageStatus, 
+  updateMessage 
+} from '@/services/firestore/messages';
+import { subscribeToConversations } from '@/services/firestore/conversations';
 
-export interface MessagingState {
-  conversations: Conversation[];
-  currentConversation: Conversation | null;
-  userStatus: string;
-  messages: Message[];
-  channels: Channel[];
-  currentChannel: Channel | null;
-  loadingMessages: boolean;
-  error: string | null;
-  // Actions
+type ActionTypes = {
   pinMessage: (messageId: string) => Promise<void>;
   unpinMessage: (messageId: string) => Promise<void>;
   setCurrentConversation: (conversation: Conversation | null) => void;
@@ -22,24 +31,50 @@ export interface MessagingState {
   deleteMessage: (messageId: string) => Promise<void>;
   reactToMessage: (messageId: string, reaction: string) => Promise<void>;
   markMessageAsRead: (messageId: string) => Promise<void>;
+};
+
+export interface MessagingState extends ActionTypes {
+  conversations: Conversation[];
+  currentConversation: Conversation | null;
+  currentConversationId: string | null;
+  userStatus: string;
+  messages: Message[];
+  channels: Channel[];
+  currentChannel: Channel | null;
+  loadingMessages: boolean;
+  error: string | null;
 }
+
+type StateWithoutActions = Omit<MessagingState, keyof ActionTypes>;
+
+const initialState: StateWithoutActions = {
+  conversations: [],
+  userStatus: 'Online',
+  currentConversation: null,
+  currentConversationId: null,
+  messages: [],
+  channels: [],
+  currentChannel: null,
+  loadingMessages: false,
+  error: null
+};
+
+type MessageUpdateData = Partial<Omit<MessageData, 'id' | 'conversationId' | 'senderId' | 'senderName'>>;
 
 export const useMessagingStore = create<MessagingState>()(
   devtools(
     subscribeWithSelector((set, get) => ({
-      conversations: [],
-      userStatus: 'Online',
-      currentConversation: null,
-      messages: [],
-      channels: [],
-      currentChannel: null,
-      loadingMessages: false,
-      error: null,
+      ...initialState,
 
       setCurrentConversation: (conversation) => {
-        set({ currentConversation: conversation, messages: [], loadingMessages: true });
+        set({ 
+          currentConversation: conversation, 
+          currentConversationId: conversation?.id || null,
+          messages: [], 
+          loadingMessages: true 
+        });
         if (conversation) {
-          FirebaseService.subscribeToMessages(conversation.id, (messages) => {
+          subscribeToMessages(conversation.id, (messages) => {
             set({ messages, loadingMessages: false });
           });
         }
@@ -48,7 +83,7 @@ export const useMessagingStore = create<MessagingState>()(
       setCurrentChannel: (channel) => {
         set({ currentChannel: channel, messages: [], loadingMessages: true });
         if (channel) {
-          FirebaseService.subscribeToMessages(channel.id, (messages) => {
+          subscribeToMessages(channel.id, (messages) => {
             set({ messages, loadingMessages: false });
           });
         }
@@ -59,94 +94,102 @@ export const useMessagingStore = create<MessagingState>()(
           const { currentConversation, currentChannel } = get();
           if (!currentConversation && !currentChannel) return;
 
-          const messageData = {
+          const currentUser = auth.currentUser;
+          if (!currentUser) throw new Error('User not authenticated');
+
+          const messageData: Partial<MessageData> = {
             content,
-            type: type as Message['type'],
+            type,
             metadata,
-            senderId: window.auth.currentUser?.uid as string,
+            senderId: currentUser.uid,
             ...(currentConversation 
               ? { conversationId: currentConversation.id }
               : { channelId: currentChannel!.id }
             ),
+            timestamp: serverTimestamp(),
             reactions: {},
           };
 
-          await FirebaseService.sendMessage(messageData);
+          await sendMessage(messageData);
         } catch (error) {
           set({ error: (error as Error).message });
         }
       },
 
-      editMessage: async (messageId, newContent) => {
+      editMessage: async (messageId: string, newContent: string) => {
         try {
-          await FirebaseService.updateDoc(messageId, {
+          const update: MessageUpdateData = {
             content: newContent,
-            editedAt: new Date(),
-          });
+            editedAt: serverTimestamp()
+          };
+          await editMessage(messageId, update);
         } catch (error) {
           set({ error: (error as Error).message });
         }
       },
 
-      deleteMessage: async (messageId) => {
+      deleteMessage: async (messageId: string) => {
         try {
-          await FirebaseService.deleteDoc(messageId);
+          await deleteMessage(messageId);
         } catch (error) {
           set({ error: (error as Error).message });
         }
       },
 
-      reactToMessage: async (messageId, reaction) => {
+      reactToMessage: async (messageId: string, reaction: string) => {
         try {
-          const userId = window.auth.currentUser?.uid;
-          if (!userId) return;
+          const currentUser = auth.currentUser;
+          if (!currentUser) throw new Error('User not authenticated');
 
           const message = get().messages.find(m => m.id === messageId);
           if (!message) return;
 
           const reactions = { ...message.reactions };
-          if (reactions[userId] === reaction) {
-            delete reactions[userId];
+          if (reactions[currentUser.uid] === reaction) {
+            delete reactions[currentUser.uid];
           } else {
-            reactions[userId] = reaction;
+            reactions[currentUser.uid] = reaction;
           }
 
-          await FirebaseService.updateDoc(messageId, { reactions });
+          const update: MessageUpdateData = { reactions };
+          await updateMessage(messageId, update);
         } catch (error) {
           set({ error: (error as Error).message });
         }
       },
 
-      markMessageAsRead: async (messageId) => {
+      markMessageAsRead: async (messageId: string) => {
         try {
-          await FirebaseService.updateMessageStatus(messageId, 'read');
+          await updateMessageStatus(messageId, 'read');
         } catch (error) {
           set({ error: (error as Error).message });
         }
       },
 
-      pinMessage: async (messageId) => {
+      pinMessage: async (messageId: string) => {
         try {
-          const userId = window.auth.currentUser?.uid;
-          if (!userId) return;
+          const currentUser = auth.currentUser;
+          if (!currentUser) throw new Error('User not authenticated');
 
-          await FirebaseService.updateDoc(messageId, {
+          const update: MessageUpdateData = {
             isPinned: true,
-            pinnedAt: new Date(),
-            pinnedBy: userId
-          });
+            pinnedAt: serverTimestamp(),
+            pinnedBy: currentUser.uid
+          };
+          await updateMessage(messageId, update);
         } catch (error) {
           set({ error: (error as Error).message });
         }
       },
 
-      unpinMessage: async (messageId) => {
+      unpinMessage: async (messageId: string) => {
         try {
-          await FirebaseService.updateDoc(messageId, {
+          const update: MessageUpdateData = {
             isPinned: false,
             pinnedAt: null,
             pinnedBy: null
-          });
+          };
+          await updateMessage(messageId, update);
         } catch (error) {
           set({ error: (error as Error).message });
         }
@@ -155,14 +198,12 @@ export const useMessagingStore = create<MessagingState>()(
   )
 );
 
-// Subscribe to conversations when the user is authenticated
 export const initializeMessaging = (userId: string) => {
-  FirebaseService.subscribeToConversations(userId, (conversations) => {
+  subscribeToConversations(userId, (conversations) => {
     useMessagingStore.setState({ conversations });
   });
 };
 
-// Custom hooks for components
 export const useCurrentConversation = () => {
   return useMessagingStore((state) => ({
     conversation: state.currentConversation,

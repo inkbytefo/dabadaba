@@ -7,74 +7,105 @@ import {
   doc,
   getDoc,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  QueryDocumentSnapshot,
+  DocumentData,
+  Unsubscribe
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Conversation } from '@/types/models';
+import type { Conversation, User } from '@/types/models';
 
-const getTimestamp = (timestamp: Timestamp | undefined): number => {
+const getTimestamp = (timestamp: Timestamp | null | undefined): number => {
   if (!timestamp) return 0;
   return timestamp.toMillis();
 };
 
+// Firestore document type
+interface ConversationDoc {
+  type: 'private' | 'group';
+  participants: { [key: string]: boolean };
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  name?: string;
+  photoURL?: string;
+  lastMessage?: string;
+  lastMessageTimestamp?: Timestamp;
+}
+
 export const subscribeToConversations = (
   userId: string,
-  callback: (conversations: Conversation[]) => void
-) => {
+  callback: (conversations: Conversation[]) => void,
+  onError?: (error: Error) => void
+): Unsubscribe => {
   // Query conversations where user is a participant
   const q = query(
     collection(db, 'conversations'),
     where('participants.' + userId, '==', true)
   );
 
-  return onSnapshot(q, (snapshot) => {
+  return onSnapshot(q, async (snapshot) => {
     try {
       console.log("[Conversations] Snapshot updated with", snapshot.docs.length, "conversations");
 
       // Map conversations with basic data
       const conversationsPromise = snapshot.docs.map(async (docSnapshot) => {
-        const data = docSnapshot.data();
+        const data = docSnapshot.data() as ConversationDoc;
         console.log("[Conversations] Processing conversation:", docSnapshot.id);
 
         // Get participant details
         const participantIds = Object.keys(data.participants || {}).filter(
-          (id) => id !== userId
+          (id: string) => id !== userId
         );
 
-        let participantData = { [userId]: true } as { [userId: string]: boolean };
+        let participantData: { [userId: string]: boolean } = { [userId]: true };
 
         if (participantIds.length > 0) {
-          const participantDocs = await Promise.all(
-            participantIds.map((id) => getDoc(doc(db, 'users', id)))
-          );
+          try {
+            const participantDocs = await Promise.all(
+              participantIds.map(async (id) => {
+                try {
+                  return await getDoc(doc(db, 'users', id));
+                } catch (err) {
+                  console.error(`[Conversations] Failed to fetch participant ${id}:`, err);
+                  return null;
+                }
+              })
+            );
 
-          participantData = participantDocs.reduce((acc, docSnapshot) => {
-            if (docSnapshot.exists()) {
-              acc[docSnapshot.id] = true;
-            }
-            return acc;
-          }, participantData);
+            participantData = participantDocs.reduce((acc, docSnapshot) => {
+              if (docSnapshot?.exists()) {
+                acc[docSnapshot.id] = true;
+              }
+              return acc;
+            }, participantData);
+          } catch (err) {
+            console.error('[Conversations] Error fetching participants:', err);
+            // Continue with basic conversation data even if participant fetch fails
+          }
         }
 
-        return {
+        const conversation: Conversation = {
           id: docSnapshot.id,
           type: data.type || 'private',
           participants: participantData,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date(),
+          createdAt: data.createdAt,
+          updatedAt: data.updatedAt,
           name: data.name || participantIds[0] || 'Unknown',
           photoURL: data.photoURL,
           lastMessage: data.lastMessage,
-        } as Conversation;
+          lastMessageTimestamp: data.lastMessageTimestamp
+        };
+
+        return conversation;
       });
 
       // Process all conversations and sort them
       Promise.all(conversationsPromise)
         .then(conversations => {
           // Sort by most recent
-          conversations.sort((a, b) => {
-            const aTimestamp = getTimestamp(a.updatedAt as unknown as Timestamp);
-            const bTimestamp = getTimestamp(b.updatedAt as unknown as Timestamp);
+          conversations.sort((a: Conversation, b: Conversation) => {
+            const aTimestamp = getTimestamp(a.updatedAt);
+            const bTimestamp = getTimestamp(b.updatedAt);
             return bTimestamp - aTimestamp;
           });
 
@@ -86,7 +117,8 @@ export const subscribeToConversations = (
           callback([]);
         });
     } catch (error) {
-      console.error('Error fetching conversations:', error);
+      console.error('[Conversations] Error in snapshot listener:', error);
+      onError?.(error instanceof Error ? error : new Error('Unknown error occurred'));
     }
   });
 };

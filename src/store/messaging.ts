@@ -409,10 +409,45 @@ export const initializeMessaging = (userId: string) => {
 
   // Create new subscription
   unsubscribeMessaging = subscribeToConversations(userId, (conversations) => {
-    useMessagingStore.setState((state) => ({
-      conversations,
-      status: { ...state.status, isLoading: false }
-    }));
+    useMessagingStore.setState((state) => {
+      // If we have conversations but no current conversation, set the first one
+      const shouldSetFirstConversation = conversations.length > 0 && !state.currentConversation;
+      
+      return {
+        conversations,
+        ...(shouldSetFirstConversation && {
+          currentConversation: conversations[0],
+          currentConversationId: conversations[0].id
+        }),
+        status: { ...state.status, isLoading: false }
+      };
+    });
+
+      // Only set loading to false after initial conversations are loaded
+      useMessagingStore.setState((state) => ({
+        status: { ...state.status, isLoading: false }
+      }));
+  
+      // Initialize messages subscription for the first conversation
+      const firstConversation = conversations[0];
+      if (firstConversation) {
+        subscribeToMessages(firstConversation.id, (messages) => {
+          useMessagingStore.setState((state) => ({
+            messages: messages as Message[],
+          }));
+        }, (error) => {
+          console.error("[Messaging] Error loading messages:", error);
+          useMessagingStore.setState((state) => ({
+            status: {
+              isLoading: false,
+              error: {
+                code: 'SERVER_ERROR',
+                message: error.message
+              }
+            }
+          }));
+        });
+      }
   });
 
   // Return cleanup function

@@ -74,14 +74,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
 
   useEffect(() => {
     console.log("[AuthProvider] Initial mount");
+    let mounted = true;
     let cleanupMessaging: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      if (!mounted) return;
+
       console.log("[AuthProvider] Auth state changed:", {
         userId: user?.uid,
         isAuthenticated: !!user
       });
 
+      // Cleanup previous messaging subscription
       if (cleanupMessaging) {
         console.log("[AuthProvider] Cleaning up previous messaging subscription");
         cleanupMessaging();
@@ -98,22 +102,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
           cleanupMessaging = initializeMessaging(user.uid);
         } catch (error) {
           console.error("[AuthProvider] Error initializing messaging:", error);
-          toast.error("Error loading messages. Please try again.");
+          if (mounted) {
+            toast.error("Error loading messages. Please try again.");
+          }
         }
+      } else {
+        // Reset messaging store on logout
+        useMessagingStore.setState({
+          conversations: [],
+          currentConversation: null,
+          currentConversationId: null,
+          messages: [],
+          status: { isLoading: false, error: null }
+        });
       }
       
-      // Always set both loading states to false after auth state change
-      setAuthLoading(false);
-      setMessagingLoading(false);
+      // Update loading states only if still mounted
+      if (mounted) {
+        setAuthLoading(false);
+        setMessagingLoading(false);
+      }
     });
 
     // Cleanup function
     return () => {
       console.log("[AuthProvider] Cleanup effect");
+      mounted = false;
       unsubscribeAuth();
       if (cleanupMessaging) {
         cleanupMessaging();
       }
+      // Reset loading states
+      setAuthLoading(false);
+      setMessagingLoading(false);
     };
   }, []);
 

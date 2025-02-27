@@ -32,7 +32,7 @@ export const UserList = ({
         <ScrollArea className="h-full">
           {isLoading ? (
             <UserListSkeleton />
-          ) : users.length === 0 ? (
+          ) : users && users.length === 0 ? (
             <div className="flex items-center justify-center h-full p-4 text-white/40">
               <p>No users found</p>
             </div>

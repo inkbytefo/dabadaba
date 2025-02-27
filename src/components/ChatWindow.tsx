@@ -8,6 +8,7 @@ import { MediaUpload } from "./MediaUpload";
 import { ReadReceipt } from "./ReadReceipt";
 import { ErrorBoundary } from "./ErrorBoundary";
 import { MessageSkeleton } from "./ui/skeleton-loader";
+import { useAuth } from "./AuthProvider";
 import { 
   PaperclipIcon, 
   Pin, 
@@ -34,6 +35,7 @@ const ReactionIcons = {
 };
 
 export const ChatWindow = () => {
+  const { user } = useAuth();
   const {
     messages,
     isLoading,
@@ -142,7 +144,7 @@ export const ChatWindow = () => {
               "inline-flex items-center gap-1 px-2 py-1 rounded-full",
               "bg-white/5 hover:bg-white/8 text-white/70 text-sm",
               "border border-white/10 transition-all duration-200",
-              message.reactions?.[currentConversation?.id || ''] === reaction && "bg-white/15"
+              message.reactions?.[user?.uid || ''] === reaction && "bg-white/15"
             )}
           >
             {reaction} {count}
@@ -221,12 +223,12 @@ export const ChatWindow = () => {
                       key={message.id}
                       className={cn(
                         "flex w-full px-4",
-                        message.senderId === currentConversation.id ? "justify-end" : "justify-start"
+                        message.senderId === user?.uid ? "justify-end" : "justify-start"
                       )}
                     >
                       <div className={cn(
                         "message-bubble group relative max-w-[70%] p-4 rounded-lg border",
-                        message.senderId === currentConversation.id
+                        message.senderId === user?.uid
                           ? "bg-blue-500/20 backdrop-blur-sm text-white border-blue-500/20"
                           : "bg-white/5 backdrop-blur-sm text-white/90 border-white/10",
                         "transition-all duration-200 hover:shadow-lg"
@@ -277,7 +279,7 @@ export const ChatWindow = () => {
                             >
                               <MessageSquare className="h-4 w-4" />
                             </Button>
-                            {message.senderId === currentConversation.id && (
+                            {message.senderId === user?.uid && (
                               <>
                                 <Button
                                   size="icon"
@@ -328,7 +330,7 @@ export const ChatWindow = () => {
                             {message.editedAt && (
                               <span className="text-white/30">(edited)</span>
                             )}
-                            {message.senderId === currentConversation.id && (
+                            {message.senderId === user?.uid && (
                               <ReadReceipt status={message.status} />
                             )}
                           </div>

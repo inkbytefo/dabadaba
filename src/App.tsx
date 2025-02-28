@@ -29,24 +29,24 @@ function App() {
 
                 {/* Protected Routes */}
                 <Route element={<RequireAuth><MessengerLayout /></RequireAuth>}>
-              <Route index element={<div className="app-container"><ChatView /></div>} />
-              <Route path="groups" element={<ChatView viewType="groups" />} />
-              <Route path="settings" element={
-                <div className="flex items-center justify-center w-full h-full p-6">
-                  <ProfileSettings
-                    open={modals.profileSettings}
-                    onOpenChange={(open) => setModalState('profileSettings', open)}
-                  />
-                </div>
-              } />
-              <Route path="settings/app" element={
-                <div className="flex items-center justify-center w-full h-full p-6">
-                  <AppSettings
-                    open={modals.appSettings}
-                    onOpenChange={(open) => setModalState('appSettings', open)}
-                  />
-                </div>
-              } />
+                  <Route index element={<ChatView />} />
+                  <Route path="groups" element={<ChatView viewType="groups" />} />
+                  <Route path="settings" element={
+                    <div className="flex items-center justify-center w-full h-full p-6">
+                      <ProfileSettings
+                        open={modals.profileSettings}
+                        onOpenChange={(open) => setModalState('profileSettings', open)}
+                      />
+                    </div>
+                  } />
+                  <Route path="settings/app" element={
+                    <div className="flex items-center justify-center w-full h-full p-6">
+                      <AppSettings
+                        open={modals.appSettings}
+                        onOpenChange={(open) => setModalState('appSettings', open)}
+                      />
+                    </div>
+                  } />
                 </Route>
 
                 {/* Fallback Route */}

@@ -4,7 +4,8 @@ import { ChatHistory } from "../ChatHistory";
 import { ChatWindow } from "../ChatWindow";
 import { UserList } from "../UserList";
 import { useMessages } from "@/store/messaging";
-import { Button } from "@/components/ui/button";
+import { useUsers } from "@/hooks/useUsers";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface PanelState {
@@ -19,7 +20,8 @@ interface ChatViewProps {
 export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
   const isGroupsView = viewType === 'groups';
   const [panels, setPanels] = useState<PanelState>({ left: true, right: true });
-  const { messages, isLoading, error } = useMessages();
+  const { messages, isLoading: messagesLoading, error: messagesError } = useMessages();
+  const { users, isLoading: usersLoading, error: usersError } = useUsers();
 
   const leftPanelOpen = panels.left;
   const rightPanelOpen = panels.right;
@@ -31,13 +33,13 @@ export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
     }));
   }, []);
 
-  if (error) {
+  if (messagesError) {
     return (
       <div className="flex items-center justify-center h-full text-white/40">
         <div className="text-center">
           <MessageSquare className="h-12 w-12 mx-auto mb-4 text-red-400" />
           <p className="text-red-400">Error loading messages</p>
-          <p className="text-sm mt-2 text-white/30">{error.message}</p>
+          <p className="text-sm mt-2 text-white/30">{messagesError.message}</p>
         </div>
       </div>
     );
@@ -52,7 +54,7 @@ export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
           "bg-[#1e1e1e]/95 backdrop-blur-lg border-r border-white/10",
           "transition-transform duration-300 ease-out will-change-transform z-20",
           !panels.left && "-translate-x-full",
-          isLoading && "animate-pulse"
+          messagesLoading && "animate-pulse"
         )}
       >
         <div className="flex flex-col h-full backdrop-blur-lg">
@@ -71,17 +73,16 @@ export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
 
       {/* Toggle Left Panel Button */}
       <Button
-        size="icon"
-        variant="ghost"
         onClick={() => togglePanel('left')}
         className={cn(
           "fixed left-0 top-1/2 -translate-y-1/2 z-30",
+          buttonVariants({ variant: "ghost", size: "icon" }),
           "bg-[#1e1e1e]/95 backdrop-blur-lg border border-white/10",
           "hover:bg-white/10 transition-colors duration-200",
           panels.left && "translate-x-[320px]",
-          isLoading && "opacity-50 cursor-not-allowed"
+          messagesLoading && "opacity-50 cursor-not-allowed"
         )}
-        disabled={isLoading}
+        disabled={messagesLoading}
         aria-label={panels.left ? "Hide message history" : "Show message history"}
       >
         {leftPanelOpen ? (
@@ -98,7 +99,7 @@ export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
           "transition-all duration-300 ease-out will-change-transform",
           panels.left && "ml-[320px]",
           panels.right && "mr-[320px]",
-          isLoading && "animate-pulse"
+          messagesLoading && "animate-pulse"
         )}
       >
         <ChatWindow />
@@ -111,7 +112,7 @@ export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
           "bg-[#1e1e1e]/95 backdrop-blur-lg border-l border-white/10",
           "transition-transform duration-300 ease-out will-change-transform z-20",
           !panels.right && "translate-x-full",
-          isLoading && "animate-pulse"
+          usersLoading && "animate-pulse"
         )}
       >
         <div className="flex flex-col h-full backdrop-blur-lg">
@@ -121,23 +122,26 @@ export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
               <h2 className="text-lg font-semibold text-white/90 tracking-wide">Users</h2>
             </div>
           </div>
-          <UserList users={[]} />
+          <UserList 
+            users={users} 
+            isLoading={usersLoading}
+            error={usersError}
+          />
         </div>
       </div>
 
       {/* Toggle Right Panel Button */}
       <Button
-        size="icon"
-        variant="ghost"
         onClick={() => togglePanel('right')}
         className={cn(
           "fixed right-0 top-1/2 -translate-y-1/2 z-30",
+          buttonVariants({ variant: "ghost", size: "icon" }),
           "bg-[#1e1e1e]/95 backdrop-blur-lg border border-white/10",
           "hover:bg-white/10 transition-colors duration-200",
           panels.right && "-translate-x-[320px]",
-          isLoading && "opacity-50 cursor-not-allowed"
+          messagesLoading && "opacity-50 cursor-not-allowed"
         )}
-        disabled={isLoading}
+        disabled={messagesLoading}
         aria-label={panels.right ? "Hide user list" : "Show user list"}
       >
         {rightPanelOpen ? (

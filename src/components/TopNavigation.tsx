@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/AuthProvider';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants, type ButtonProps } from '@/components/ui/button';
 import {
   User,
   Users,
@@ -114,15 +114,12 @@ export const TopNavigation = ({
           {navItems.map((item) => (
             <Button
               key={item.label}
-              variant="ghost"
               onClick={item.onClick}
-              className={cn(
-                "flex items-center gap-2.5 transition-all duration-200 relative
-",
-                item.isActive 
-                  ? "text-white bg-white/15 shadow-inner" 
-               : "text-white/60 hover:text-white hover:bg-white/10"
-              )}
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "default" }),
+                  "flex items-center gap-2.5 transition-all duration-200 relative",
+                  item.isActive ? "text-white bg-white/15 shadow-inner" : "text-white/60 hover:text-white hover:bg-white/10"
+                )}
               aria-label={item.label}
               title={item.label}
             >
@@ -145,10 +142,11 @@ export const TopNavigation = ({
         {/* Right - User Controls */}
         <div className="flex items-center gap-1 md:gap-3">
           <Button
-            variant="ghost"
-            size="icon"
             onClick={() => setShowAppSettings(true)}
-            className="text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-200"
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "icon" }),
+              "text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-200"
+            )}
             aria-label="Settings"
             title="Settings"
           >
@@ -158,8 +156,10 @@ export const TopNavigation = ({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                className="relative h-10 w-10 rounded-full overflow-hidden ring-2 ring-white/10 hover:ring-white/20 transition-all duration-200"
+                className={cn(
+                  buttonVariants({ variant: "ghost", size: "icon" }),
+                  "relative h-10 w-10 rounded-full overflow-hidden ring-2 ring-white/10 hover:ring-white/20 transition-all duration-200"
+                )}
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.photoURL} alt={user.displayName || 'Profile'} />

@@ -1,135 +1,196 @@
-# Genel Bir Proje İçin "Health Monitor" UI Tasarım Kılavuzu
+# XCORD UI Design Guidelines
 
-Bu kılavuz, "Health Monitor" adlı bir sağlık izleme uygulamasının kullanıcı arayüzü (UI) tasarımından ilham alarak, herhangi bir projeye uyarlanabilir bir şablon sunar. Tasarım, koyu mavi ve gri tonlarla minimalist, modern ve profesyonel bir estetik sergiler. Şeffaf kartlar, katmanlı düzen ve kullanıcı dostu bir yapı ile bilgiye hızlı erişim sağlamayı hedefler. Aşağıda, bu arayüzün temel bileşenleri detaylı bir şekilde açıklanmış ve farklı sektörlerdeki projelere uygulanabilir hale getirilmiştir.
+This document outlines the UI design principles and components used in the XCORD messenger application. The design system is built on Shadcn UI, providing a consistent, accessible, and modern user experience.
 
----
+## Design System
 
-## 1. Başlık Bölümü (Header Section)
+### Colors
 
-- **Konum**: Arayüzün en üst kısmı.
-- **Amaç**: Marka kimliğini ve kullanıcıya özel bilgileri göstermek.
-- **Bileşenler**:
-  - **Sol Taraf**: Proje adı (ör. "Health Monitor") ve isteğe bağlı bir alt başlık (ör. "application").
-  - **Sağ Taraf**: Kullanıcı bilgisi (ör. bir isim), mevcut saat ve bağlamsal veri (ör. konum veya tarih).
-- **Tasarım Önerileri**:
-  - Koyu arka plan (`#1e1e1e`) ve beyaz metinle yüksek kontrast.
-  - Yarı saydamlık efekti (`opacity: 0.8`) ile modern bir görünüm.
-- **Uyarlama Örneği**:
-  - Bir eğitim uygulamasında: "EduTrack" adı ve "Öğretmen: Ayşe Yılmaz" bilgisi.
-  - Bir müşteri hizmetleri projesinde: "SupportHub" ve "Temsilci: Ali Kaya".
+```css
+--background: 0 0% 100%;
+--foreground: 222.2 84% 4.9%;
+--primary: 221.2 83.2% 53.3%;
+--secondary: 210 40% 96.1%;
+--accent: 210 40% 96.1%;
+--muted: 210 40% 96.1%;
+--destructive: 0 84.2% 60.2%;
+```
 
----
+Dark mode variants are automatically handled by Tailwind's dark mode system.
 
-## 2. Navigasyon ve Arama Çubuğu (Navigation and Search Bar)
+### Typography
 
-- **Konum**: Başlık altında, yatay bir şerit olarak.
-- **Amaç**: Hızlı erişim ve veri filtreleme sağlamak.
-- **Bileşenler**:
-  - **Sol**: Yaklaşan bir olayın göstergesi (ör. "Bir sonraki görev").
-  - **Orta**: Arama çubuğu (ör. "Kayıt ara" gibi genel bir placeholder ile).
-  - **Sağ**: Simgeler (ayarlar, bildirimler, menü).
-- **Tasarım Önerileri**:
-  - Koyu tema ile beyaz simgeler.
-  - Arama çubuğunda ince bir kenarlık ile odaklanma hissi.
-- **Uyarlama Örneği**:
-  - Etkinlik planlama: "Bir sonraki etkinlik" ve "Etkinlik ara".
-  - İş yönetimi: "Bir sonraki toplantı" ve "Proje ara".
+- **Font Family**: Inter (Primary), System UI (Fallback)
+- **Base Size**: 16px (1rem)
+- **Scale**:
+  - xs: 0.75rem
+  - sm: 0.875rem
+  - base: 1rem
+  - lg: 1.125rem
+  - xl: 1.25rem
+  - 2xl: 1.5rem
 
----
+## Layout Components
 
-## 3. Kart Izgara Bölümü (Card Grid Section)
+### Top Navigation
+- Fixed position at the top
+- Contains user avatar, search bar, and primary actions
+- Responsive design with mobile menu
+- Height: 64px
 
-- **Konum**: Ana içerik alanı.
-- **Amaç**: Verileri düzenli ve görsel olarak erişilebilir şekilde sunmak.
-- **Bileşenler**:
-  - Görsel (ör. avatar, ikon veya ürün resmi).
-  - Başlık ve alt detaylar (ör. isim, kategori).
-  - Açıklama (ör. durum, görev tanımı).
-  - Tanımlayıcı (ör. ID numarası).
-  - Tarih/saat bilgisi.
-  - Aksiyon butonu (ör. "Detayları Görüntüle").
-- **Tasarım Önerileri**:
-  - Şeffaf, koyu arka planlı kartlar ve yuvarlatılmış köşeler.
-  - Renk kodlama ile durum veya öncelik vurgusu (ör. kırmızı = acil, sarı = orta).
-- **Uyarlama Örneği**:
-  - E-ticaret: Ürün kartları (resim, isim, fiyat, "Sepete Ekle" butonu).
-  - Görev yönetimi: Görev kartları (isim, son tarih, "Tamamla" butonu).
+### Sidebar
+- Fixed position on the left
+- Width: 280px (desktop), full width (mobile)
+- Contains navigation links and user lists
+- Collapsible on mobile
 
----
+### Main Content Area
+- Responsive padding and margins
+- Maximum width: 1200px
+- Content centered within container
+- Proper spacing between sections (1.5rem)
 
-## 4. Takvim/Planlama Bölümü (Calendar/Scheduling Section)
+## UI Components
 
-- **Konum**: Kartların altında veya yan yana bir panelde.
-- **Amaç**: Zaman bazlı olayları organize etmek ve görselleştirmek.
-- **Bileşenler**:
-  - Başlık (ör. "Kullanıcı/Program Adı: Planlama").
-  - Haftalık/günlük takvim görünümü.
-  - Olay listesi (ör. isim ve açıklama ile).
-  - Navigasyon (oklar ve "Bugün" butonu).
-- **Tasarım Önerileri**:
-  - Gri ve mavi tonlarla sade bir grid düzeni.
-  - Olaylar için net zaman ve açıklama satırları.
-- **Uyarlama Örneği**:
-  - Eğitim: "Ders Programı: Prof. Ahmet" ve ders saatleri.
-  - Proje yönetimi: "Sprint Planlama" ve toplantı saatleri.
+### Buttons
+- Primary: Solid background with white text
+- Secondary: Outlined style
+- Ghost: Text-only style
+- Icon buttons: Square aspect ratio
+- Loading states with spinners
+- Disabled states with reduced opacity
 
----
+### Forms
+- Consistent input heights (40px)
+- Clear focus states
+- Validation styles (error, success)
+- Helper text position
+- Required field indicators
 
-## 5. Bildirim Balonu (Notification Popup)
+### Cards
+- Consistent padding (1rem)
+- Rounded corners (0.5rem)
+- Subtle shadows
+- Hover states
+- Content hierarchy
 
-- **Konum**: Sağ alt köşe (veya ekranın uygun bir alanı).
-- **Amaç**: Önemli hatırlatmalar veya güncellemeler sunmak.
-- **Bileşenler**:
-  - Başlık (ör. "Yaklaşan Olay").
-  - Detay (ör. saat ve isim).
-- **Tasarım Önerileri**:
-  - Renkli arka plan (ör. mavi) ve beyaz metin.
-  - Ana içeriği engellemeyecek bir konum.
-- **Uyarlama Örneği**:
-  - Müşteri hizmetleri: "Yeni Talep: 09:00".
-  - Sistem yönetimi: "Güncelleme Hazır".
+### Messaging Components
+- **Chat Window**:
+  - Message bubbles with different styles for sent/received
+  - Timestamp positioning
+  - Media content handling
+  - Link previews
+- **Input Area**:
+  - Expandable text area
+  - Attachment options
+  - Send button alignment
+- **Read Receipts**:
+  - Subtle indication
+  - Multiple states (sent, delivered, read)
 
----
+### Lists and Grids
+- Consistent spacing
+- Clear hierarchy
+- Interactive states
+- Loading states
+- Empty states
 
-## 6. Arka Plan ve Çevre (Background and Environment)
+## Interactive Elements
 
-- **Amaç**: Kullanıcıya bağlamsal bir his sağlamak.
-- **Öneriler**:
-  - Projenin kullanıldığı ortama uygun bir görsel (ör. ofis, ev, açık alan).
-  - Hafif bulanıklık veya gradient efekti ile arayüzü ön plana çıkarma.
-- **Uyarlama Örneği**:
-  - Ev otomasyonu: Modern bir oturma odası arka planı.
-  - Endüstriyel: Fabrika veya depo görüntüsü.
+### Feedback
+- Toast notifications
+- Loading states
+- Error messages
+- Success confirmations
+- Progress indicators
 
----
+### Modals and Dialogs
+- Centered positioning
+- Backdrop blur
+- Close button placement
+- Action button alignment
+- Mobile-responsive sizing
 
-## 7. Genel Tasarım Prensipleri
+## Accessibility
 
-Bu tasarımın herhangi bir projeye uygulanabilirliğini artıran temel prensipler:
+### Color Contrast
+- All text meets WCAG 2.1 AA standards
+- Interactive elements have sufficient contrast
+- Focus indicators are visible
 
-- **Koyu Mod Estetiği**: Göz yorgunluğunu azaltır ve şık bir görünüm sunar.
-- **Şeffaf Kartlar**: Görsel hiyerarşi ve derinlik yaratır.
-- **Renk Kodlama**: Bilgi önceliklendirmesini kolaylaştırır.
-- **Modüler Düzen**: Farklı veri türleri ve işlevler için esneklik sağlar.
-- **Gerçek Zamanlı Unsurlar**: Kullanıcıyı güncel tutar ve etkileşimi artırır.
+### Keyboard Navigation
+- Focus trap in modals
+- Skip links
+- Logical tab order
+- Visible focus states
 
----
+### Screen Readers
+- ARIA labels
+- Role attributes
+- Meaningful alt text
+- Status updates
 
-## 8. Uygulama Şablonu
+## Responsive Design
 
-Bu tasarımı kendi projenize uyarlamak için şu adımları izleyin:
+### Breakpoints
+```css
+sm: 640px
+md: 768px
+lg: 1024px
+xl: 1280px
+2xl: 1536px
+```
 
-1. **Başlık**: Projenizin adını ve kullanıcı bilgilerini ekleyin.
-2. **Navigasyon**: Arama ve kontrol araçlarıyla erişimi kolaylaştırın.
-3. **Kartlar**: Veri türünüze uygun kart içeriği tasarlayın.
-4. **Takvim**: Planlama ihtiyaçlarınıza göre özelleştirin.
-5. **Bildirimler**: Önemli uyarıları entegre edin.
-6. **Arka Plan**: Projenizin bağlamına uygun bir görsel seçin.
+### Mobile Considerations
+- Touch targets (minimum 44x44px)
+- Simplified navigation
+- Stack layouts
+- Reduced animations
+- Gesture support
 
-**Örnek Özelleştirme**:
-- **Eğitim**: Öğrenci profilleri (kartlar), ders programı (takvim), ödev hatırlatmaları (bildirim).
-- **Müşteri Hizmetleri**: Müşteri kayıtları (kartlar), randevular (takvim), yeni talepler (bildirim).
+## Animation Guidelines
 
----
+### Transitions
+- Duration: 150ms-300ms
+- Easing: ease-in-out
+- Use for:
+  - Page transitions
+  - Modal open/close
+  - List item changes
+  - Form feedback
 
-Bu kılavuz, "XCORD" tasarımını temel alarak herhangi bir proje için modern, işlevsel ve kullanıcı dostu bir arayüz oluşturmanıza olanak tanır. Koyu modun zarifliği, modüler yapının esnekliği ve görsel hiyerarşinin gücü ile projenizi profesyonel bir seviyeye taşıyabilirsiniz.
+### Loading States
+- Skeleton loaders for content
+- Spinner for actions
+- Progress bars for uploads
+- Smooth opacity transitions
+
+## Best Practices
+
+1. **Consistency**
+   - Use defined components
+   - Maintain spacing patterns
+   - Follow color system
+   - Apply typography scale
+
+2. **Performance**
+   - Optimize images
+   - Lazy load content
+   - Minimize animations
+   - Cache resources
+
+3. **Accessibility**
+   - Test with screen readers
+   - Support keyboard navigation
+   - Provide text alternatives
+   - Maintain focus management
+
+4. **Responsiveness**
+   - Mobile-first approach
+   - Fluid typography
+   - Flexible layouts
+   - Touch-friendly
+
+## Component Implementation
+
+For detailed component implementation, refer to the `components.md` documentation and the `ui` directory in the source code.

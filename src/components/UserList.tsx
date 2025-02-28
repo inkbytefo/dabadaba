@@ -14,9 +14,9 @@ interface UserListProps {
 }
 
 export const UserList = ({ 
-  users, 
-  isLoading, 
-  error, 
+  users = [], // Provide default empty array
+  isLoading = false, 
+  error = null, 
   onUserSelect,
   selectedUserId 
 }: UserListProps) => {
@@ -25,6 +25,14 @@ export const UserList = ({
   if (error) {
     throw error; // This will be caught by the ErrorBoundary
   }
+  // Add null check for users array
+  if (!Array.isArray(users)) {
+    return (
+      <div className="flex items-center justify-center h-full p-4 text-white/40">
+        <p>No users available</p>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -32,7 +40,7 @@ export const UserList = ({
         <ScrollArea className="h-full">
           {isLoading ? (
             <UserListSkeleton />
-          ) : users && users.length === 0 ? (
+          ) : users.length === 0 ? (
             <div className="flex items-center justify-center h-full p-4 text-white/40">
               <p>No users found</p>
             </div>

@@ -9,7 +9,6 @@ import type { Message } from '@/types/models';
 import { useAuth } from './AuthProvider';
 
 export const ChatHistory = () => {
-  console.log("[ChatHistory] Rendering");
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -18,25 +17,22 @@ export const ChatHistory = () => {
   const { user } = useAuth();
   const { conversation: currentConversation, setConversation } = useCurrentConversation();
 
-  console.log("[ChatHistory] State:", {
-    messagesCount: messages.length,
-    hasUser: !!user,
-    currentConversationId: currentConversation?.id
-  });
-
   // Filter messages based on search query
-  const filteredMessages = messages.filter(message => (
-    message.content.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-    (message.senderName && message.senderName.toLowerCase().includes(debouncedSearch.toLowerCase()))
-  ));
+  const filteredMessages = useMemo(() => {
+    return messages.filter(message => (
+      message.content.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      (message.senderName && message.senderName.toLowerCase().includes(debouncedSearch.toLowerCase()))
+    ));
+  }, [messages, debouncedSearch]);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'auto' });
     }
   }, [messages]);
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex(prev => Math.min(prev + 1, filteredMessages.length - 1));
@@ -46,61 +42,10 @@ export const ChatHistory = () => {
     } else if (e.key === 'Enter' && filteredMessages[selectedIndex]) {
       handleMessageClick(filteredMessages[selectedIndex]);
     }
-  };
+  }, [filteredMessages, selectedIndex]);
 
-  const groupMessagesByDate = (messages: Message[]) => {
-    const groups: { [key: string]: Message[] } = {};
-    
-    messages.forEach(message => {
-      if (!message.timestamp) return;
-      
-      const messageDate = message.timestamp.toDate();
-      let date = format(messageDate, 'MMM d, yyyy');
-      
-      if (isToday(messageDate)) {
-        date = 'Today';
-      } else if (isYesterday(messageDate)) {
-        date = 'Yesterday';
-      }
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(message);
-    });
-
-    return groups;
-  };
-
-  const getMessagePreview = (message: Message) => {
-    if (!message.content) return "No content";
-    
-    switch (message.type) {
-      case 'image':
-        return '🖼️ Shared an image';
-      case 'video':
-        return '🎥 Shared a video';
-      case 'file':
-        return '📎 Shared a file';
-      case 'audio':
-        return '🎵 Shared audio';
-      case 'markdown':
-        return message.content;
-      default:
-        return message.content;
-    }
-  };
-
-  const handleMessageClick = (message: Message) => {
-    console.log("[ChatHistory] Selecting conversation:", {
-      messageId: message.id,
-      conversationId: message.conversationId,
-      senderId: message.senderId
-    });
-
-    if (!message.conversationId || !message.senderId) {
-      console.error("[ChatHistory] Missing required message properties");
-      return;
-    }
+  const handleMessageClick = useCallback((message: Message) => {
+    if (!message.conversationId || !message.senderId) return;
 
     setConversation({
       id: message.conversationId,
@@ -112,7 +57,7 @@ export const ChatHistory = () => {
       createdAt: message.timestamp,
       updatedAt: message.timestamp,
     });
-  };
+  }, [setConversation, user]);
 
   if (!user) {
     return (
@@ -212,3 +157,45 @@ export const ChatHistory = () => {
     </div>
   );
 };
+
+const groupMessagesByDate = (messages: Message[]) => {
+    const groups: { [key: string]: Message[] } = {};
+    
+    messages.forEach(message => {
+      if (!message.timestamp) return;
+      
+      const messageDate = message.timestamp.toDate();
+      let date = format(messageDate, 'MMM d, yyyy');
+      
+      if (isToday(messageDate)) {
+        date = 'Today';
+      } else if (isYesterday(messageDate)) {
+        date = 'Yesterday';
+      }
+      if (!groups[date]) {
+        groups[date] = [];
+      }
+      groups[date].push(message);
+    });
+
+    return groups;
+  };
+
+  const getMessagePreview = (message: Message) => {
+    if (!message.content) return "No content";
+    
+    switch (message.type) {
+      case 'image':
+        return '🖼️ Shared an image';
+      case 'video':
+        return '🎥 Shared a video';
+      case 'file':
+        return '📎 Shared a file';
+      case 'audio':
+        return '🎵 Shared audio';
+      case 'markdown':
+        return message.content;
+      default:
+        return message.content;
+    }
+  };

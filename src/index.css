@@ -45,16 +45,23 @@
   }
 
   html, body {
-    @apply h-full antialiased;
+    @apply h-full min-h-screen antialiased bg-[#1e1e1e] overflow-hidden;
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans min-h-screen;
+  }
+
+  #root {
+    @apply h-full min-h-screen flex flex-col bg-[#1e1e1e];
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-sans font-semibold text-white/90 tracking-tight;
   }
+
+  /* Layout Utilities */
+  .app-root { @apply min-h-screen flex flex-col bg-[#1e1e1e] overflow-hidden; }
 
   h1 { @apply text-3xl; }
   h2 { @apply text-2xl; }
@@ -67,11 +74,11 @@
 
 @layer components {
   .app-container {
-    @apply h-screen flex flex-col;
+    @apply min-h-screen flex flex-col bg-[#1e1e1e] overflow-hidden;
   }
 
   .main-content {
-    @apply flex-1 flex overflow-hidden;
+    @apply flex-1 flex overflow-hidden bg-[#1e1e1e]/90 backdrop-blur-lg;
   }
 
   /* Layout Components */

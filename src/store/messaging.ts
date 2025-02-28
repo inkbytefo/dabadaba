@@ -14,9 +14,9 @@ import {
 } from 'firebase/firestore';
 import { 
   subscribeToMessages, 
-  sendMessage, 
-  editMessage, 
-  deleteMessage, 
+  sendMessage as apiSendMessage, 
+  editMessage as apiEditMessage, 
+  deleteMessage as apiDeleteMessage, 
   updateMessageStatus, 
   updateMessage 
 } from '@/services/firestore/messages';
@@ -45,9 +45,10 @@ type ActionTypes = {
   markMessageAsRead: (messageId: string) => Promise<void>;
   setError: (error: MessageError | null) => void;
   setLoading: (isLoading: boolean) => void;
+  reset: () => void;
 };
 
-export interface MessagingState extends ActionTypes {
+type StateWithoutActions = {
   conversations: Conversation[];
   currentConversation: Conversation | null;
   currentConversationId: string | null;
@@ -57,9 +58,9 @@ export interface MessagingState extends ActionTypes {
   currentChannel: Channel | null;
   status: MessagingStatus;
   optimisticUpdates: Map<string, Message>;
-}
+};
 
-type StateWithoutActions = Omit<MessagingState, keyof ActionTypes>;
+export interface MessagingState extends StateWithoutActions, ActionTypes {}
 
 const initialState: StateWithoutActions = {
   conversations: [],
@@ -78,71 +79,106 @@ const initialState: StateWithoutActions = {
 
 type MessageUpdateData = Partial<Omit<MessageData, 'id' | 'conversationId' | 'senderId' | 'senderName'>>;
 
-// Helper function to create optimistic updates
-const createOptimisticMessage = (
-  content: string, 
-  type: Message['type'], 
-  metadata?: Message['metadata'],
-  currentUser?: FirebaseUser | null
-): Message => ({
-  id: `optimistic-${Date.now()}`,
-  content,
-  type,
-  metadata,
-  senderId: currentUser?.uid || '',
-  senderName: currentUser?.displayName || '',
-  conversationId: '',
-  timestamp: Timestamp.now(),
-  status: 'sending' as MessageStatus,
-  reactions: {},
-  isPinned: false
-});
+let unsubscribeMessaging: (() => void) | null = null;
+let unsubscribeMessages: (() => void) | null = null;
 
 export const useMessagingStore = create<MessagingState>()(
   devtools(
     subscribeWithSelector((set, get) => ({
       ...initialState,
-
+      
       setError: (error) => set((state) => ({
         status: { ...state.status, error }
       })),
-
+      
       setLoading: (isLoading) => set((state) => ({
         status: { ...state.status, isLoading }
       })),
-
+      
+      reset: () => {
+        if (unsubscribeMessages) {
+          unsubscribeMessages();
+          unsubscribeMessages = null;
+        }
+        if (unsubscribeMessaging) {
+          unsubscribeMessaging();
+          unsubscribeMessaging = null;
+        }
+        set(initialState);
+      },
+      
       setCurrentConversation: (conversation) => {
+        if (unsubscribeMessages) {
+          unsubscribeMessages();
+          unsubscribeMessages = null;
+        }
+
         set((state) => ({ 
           currentConversation: conversation, 
           currentConversationId: conversation?.id || null,
-          messages: [] as Message[],
+          messages: [],
           status: { ...state.status, isLoading: true }
         }));
 
         if (conversation) {
-          subscribeToMessages(conversation.id, (messages) => {
-            set((state) => ({ 
-              messages: messages as Message[],
-              status: { ...state.status, isLoading: false }
+          try {
+            unsubscribeMessages = subscribeToMessages(
+              conversation.id,
+              (messages) => {
+                set((state) => ({ 
+                  messages: messages as Message[],
+                  status: { ...state.status, isLoading: false }
+                }));
+              }
+            );
+          } catch (error) {
+            set((state) => ({
+              status: {
+                isLoading: false,
+                error: {
+                  code: 'SERVER_ERROR',
+                  message: (error as Error).message
+                }
+              }
             }));
-          });
+          }
         }
       },
 
       setCurrentChannel: (channel) => {
+        if (unsubscribeMessages) {
+          unsubscribeMessages();
+          unsubscribeMessages = null;
+        }
+
         set((state) => ({ 
           currentChannel: channel, 
-          messages: [] as Message[],
+          messages: [],
           status: { ...state.status, isLoading: true }
         }));
 
         if (channel) {
-          subscribeToMessages(channel.id, (messages) => {
-            set((state) => ({ 
-              messages: messages as Message[],
-              status: { ...state.status, isLoading: false }
+          try {
+            unsubscribeMessages = subscribeToMessages(
+              channel.id,
+              (messages) => {
+                set((state) => ({ 
+                  messages: messages as Message[],
+                  status: { ...state.status, isLoading: false }
+                }));
+              }
+            );
+          } catch (error) {
+            set((state) => ({
+              status: {
+                isLoading: false,
+                error: {
+                  code: 'SERVER_ERROR',
+                  message: (error as Error).message
+                }
+              }
             }));
-          });
+          }
         }
       },
 
@@ -164,241 +200,97 @@ export const useMessagingStore = create<MessagingState>()(
         }
 
         if (!currentUser) {
-          set((state) => ({
-            status: {
-              ...state.status,
-              error: {
-                code: 'AUTH_ERROR',
-                message: 'User not authenticated'
-              }
-            }
-          }));
-          return;
+          throw new Error('User not authenticated');
         }
 
-        // Create optimistic message
-        const optimisticMessage = createOptimisticMessage(content, type, metadata, currentUser);
-        
-        set((state) => ({
-          messages: [...state.messages, optimisticMessage],
-          optimisticUpdates: new Map(state.optimisticUpdates).set(optimisticMessage.id, optimisticMessage)
-        }));
+        const messageData: Partial<MessageData> = {
+          content,
+          type,
+          metadata,
+          senderId: currentUser.uid,
+          senderName: currentUser.displayName || '',
+          status: 'sending',
+          ...(currentConversation 
+            ? { conversationId: currentConversation.id }
+            : { channelId: currentChannel!.id }
+          ),
+          timestamp: serverTimestamp() as TimestampField,
+          reactions: {},
+        };
 
-        try {
-          const messageData: Partial<MessageData> = {
-            content,
-            type,
-            metadata,
-            senderId: currentUser.uid,
-            status: 'sending' as MessageStatus,
-            ...(currentConversation 
-              ? { conversationId: currentConversation.id }
-              : { channelId: currentChannel!.id }
-            ),
-            timestamp: serverTimestamp() as TimestampField,
-            reactions: {},
-          };
-
-          await sendMessage(messageData);
-          
-          // Remove optimistic update on success
-          set((state) => {
-            const updates = new Map(state.optimisticUpdates);
-            updates.delete(optimisticMessage.id);
-            return { optimisticUpdates: updates };
-          });
-        } catch (error) {
-          // Mark optimistic message as failed
-          const failedMessage: Message = {
-            ...optimisticMessage,
-            status: 'sending' as MessageStatus
-          };
-
-          set((state) => ({
-            messages: state.messages.map(m => 
-              m.id === optimisticMessage.id ? failedMessage : m
-            ),
-            status: {
-              ...state.status,
-              error: {
-                code: 'NETWORK_ERROR',
-                message: (error as Error).message
-              }
-            }
-          }));
-        }
+        await apiSendMessage(messageData);
       },
 
-      editMessage: async (messageId: string, newContent: string) => {
-        set((state) => ({ status: { ...state.status, isLoading: true } }));
-        
-        try {
-          const update: MessageUpdateData = {
-            content: newContent,
-            editedAt: serverTimestamp() as TimestampField
-          };
-          await editMessage(messageId, update);
-          set((state) => ({ status: { ...state.status, isLoading: false } }));
-        } catch (error) {
-          set((state) => ({
-            status: {
-              isLoading: false,
-              error: {
-                code: 'SERVER_ERROR',
-                message: (error as Error).message
-              }
-            }
-          }));
-        }
+      editMessage: async (messageId, newContent) => {
+        const update: MessageUpdateData = {
+          content: newContent,
+          editedAt: serverTimestamp() as TimestampField
+        };
+        await apiEditMessage(messageId, update);
       },
 
-      deleteMessage: async (messageId: string) => {
-        set((state) => ({ status: { ...state.status, isLoading: true } }));
-        
-        try {
-          await deleteMessage(messageId);
-          set((state) => ({ status: { ...state.status, isLoading: false } }));
-        } catch (error) {
-          set((state) => ({
-            status: {
-              isLoading: false,
-              error: {
-                code: 'SERVER_ERROR',
-                message: (error as Error).message
-              }
-            }
-          }));
-        }
+      deleteMessage: async (messageId) => {
+        await apiDeleteMessage(messageId);
       },
 
-      reactToMessage: async (messageId: string, reaction: string) => {
+      reactToMessage: async (messageId, reaction) => {
         const currentUser = auth.currentUser;
         if (!currentUser) {
-          set((state) => ({
-            status: {
-              ...state.status,
-              error: {
-                code: 'AUTH_ERROR',
-                message: 'User not authenticated'
-              }
-            }
-          }));
-          return;
+          throw new Error('User not authenticated');
         }
 
-        try {
-          const message = get().messages.find(m => m.id === messageId);
-          if (!message) return;
+        const message = get().messages.find(m => m.id === messageId);
+        if (!message) return;
 
-          const reactions = { ...message.reactions };
-          if (reactions[currentUser.uid] === reaction) {
-            delete reactions[currentUser.uid];
-          } else {
-            reactions[currentUser.uid] = reaction;
-          }
-
-          const update: MessageUpdateData = { reactions };
-          await updateMessage(messageId, update);
-        } catch (error) {
-          set((state) => ({
-            status: {
-              ...state.status,
-              error: {
-                code: 'SERVER_ERROR',
-                message: (error as Error).message
-              }
-            }
-          }));
+        const reactions = { ...message.reactions };
+        if (reactions[currentUser.uid] === reaction) {
+          delete reactions[currentUser.uid];
+        } else {
+          reactions[currentUser.uid] = reaction;
         }
+
+        await updateMessage(messageId, { reactions });
       },
 
-      markMessageAsRead: async (messageId: string) => {
-        try {
-          await updateMessageStatus(messageId, 'read' as MessageStatus);
-        } catch (error) {
-          set((state) => ({
-            status: {
-              ...state.status,
-              error: {
-                code: 'SERVER_ERROR',
-                message: (error as Error).message
-              }
-            }
-          }));
-        }
+      markMessageAsRead: async (messageId) => {
+        await updateMessageStatus(messageId, 'read');
       },
 
-      pinMessage: async (messageId: string) => {
+      pinMessage: async (messageId) => {
         const currentUser = auth.currentUser;
         if (!currentUser) {
-          set((state) => ({
-            status: {
-              ...state.status,
-              error: {
-                code: 'AUTH_ERROR',
-                message: 'User not authenticated'
-              }
-            }
-          }));
-          return;
+          throw new Error('User not authenticated');
         }
 
-        try {
-          const update: MessageUpdateData = {
-            isPinned: true,
-            pinnedAt: serverTimestamp() as TimestampField,
-            pinnedBy: currentUser.uid
-          };
-          await updateMessage(messageId, update);
-        } catch (error) {
-          set((state) => ({
-            status: {
-              ...state.status,
-              error: {
-                code: 'SERVER_ERROR',
-                message: (error as Error).message
-              }
-            }
-          }));
-        }
+        await updateMessage(messageId, {
+          isPinned: true,
+          pinnedAt: serverTimestamp() as TimestampField,
+          pinnedBy: currentUser.uid
+        });
       },
 
-      unpinMessage: async (messageId: string) => {
-        try {
-          const update: MessageUpdateData = {
-            isPinned: false,
-            pinnedAt: null,
-            pinnedBy: null
-          };
-          await updateMessage(messageId, update);
-        } catch (error) {
-          set((state) => ({
-            status: {
-              ...state.status,
-              error: {
-                code: 'SERVER_ERROR',
-                message: (error as Error).message
-              }
-            }
-          }));
-        }
+      unpinMessage: async (messageId) => {
+        await updateMessage(messageId, {
+          isPinned: false,
+          pinnedAt: null,
+          pinnedBy: null
+        });
       },
     }))
   )
 );
 
-let unsubscribeMessaging: (() => void) | null = null;
-
 export const initializeMessaging = (userId: string) => {
-  // Set loading state
-  useMessagingStore.setState((state) => ({
-    status: { ...state.status, isLoading: true }
-  }));
+  useMessagingStore.getState().setLoading(true);
 
-  // Clean up existing subscription
   if (unsubscribeMessaging) {
     unsubscribeMessaging();
     unsubscribeMessaging = null;
+  }
+  
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
+    unsubscribeMessages = null;
   }
 
   // Reset store state
@@ -407,10 +299,8 @@ export const initializeMessaging = (userId: string) => {
     status: { isLoading: true, error: null }
   });
 
-  // Create new subscription
   unsubscribeMessaging = subscribeToConversations(userId, (conversations) => {
     useMessagingStore.setState((state) => {
-      // If we have conversations but no current conversation, set the first one
       const shouldSetFirstConversation = conversations.length > 0 && !state.currentConversation;
       
       return {
@@ -423,53 +313,60 @@ export const initializeMessaging = (userId: string) => {
       };
     });
 
-      // Only set loading to false after initial conversations are loaded
-      useMessagingStore.setState((state) => ({
-        status: { ...state.status, isLoading: false }
-      }));
-  
-      // Initialize messages subscription for the first conversation
-      const firstConversation = conversations[0];
-      if (firstConversation) {
-        subscribeToMessages(firstConversation.id, (messages) => {
-          useMessagingStore.setState((state) => ({
-            messages: messages as Message[],
-          }));
-        }, (error) => {
-          console.error("[Messaging] Error loading messages:", error);
-          useMessagingStore.setState((state) => ({
-            status: {
-              isLoading: false,
-              error: {
-                code: 'SERVER_ERROR',
-                message: error.message
-              }
+    const firstConversation = conversations[0];
+    if (firstConversation) {
+      if (unsubscribeMessages) {
+        unsubscribeMessages();
+      }
+      
+      try {
+        unsubscribeMessages = subscribeToMessages(
+          firstConversation.id,
+          (messages) => {
+            useMessagingStore.setState({
+              messages: messages as Message[],
+              status: { isLoading: false, error: null }
+            });
+          }
+        );
+      } catch (error) {
+        console.error("[Messaging] Error subscribing to messages:", error);
+        useMessagingStore.setState({
+          status: {
+            isLoading: false,
+            error: {
+              code: 'SERVER_ERROR',
+              message: (error as Error).message
             }
-          }));
+          }
         });
       }
+    }
   });
 
-  // Return cleanup function
   return () => {
     if (unsubscribeMessaging) {
       unsubscribeMessaging();
       unsubscribeMessaging = null;
     }
-    // Reset store on cleanup
+    
+    if (unsubscribeMessages) {
+      unsubscribeMessages();
+      unsubscribeMessages = null;
+    }
     useMessagingStore.setState(initialState);
   };
 };
 
-// Memoized selectors with complete typing
-const currentConversationSelector = (state: MessagingState) => ({
+// Selectors
+export const currentConversationSelector = (state: MessagingState) => ({
   conversation: state.currentConversation,
   setConversation: state.setCurrentConversation,
   isLoading: state.status.isLoading,
   error: state.status.error
 });
 
-const messagesSelector = (state: MessagingState) => ({
+export const messagesSelector = (state: MessagingState) => ({
   messages: state.messages,
   currentConversation: state.currentConversation,
   isLoading: state.status.isLoading,
@@ -481,10 +378,10 @@ const messagesSelector = (state: MessagingState) => ({
   reactToMessage: state.reactToMessage,
   markAsRead: state.markMessageAsRead,
   pinMessage: state.pinMessage,
-  unpinMessage: state.unpinMessage,
+  unpinMessage: state.unpinMessage
 });
 
-const channelsSelector = (state: MessagingState) => ({
+export const channelsSelector = (state: MessagingState) => ({
   channels: state.channels,
   currentChannel: state.currentChannel,
   setCurrentChannel: state.setCurrentChannel,

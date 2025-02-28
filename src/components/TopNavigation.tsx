@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import {
@@ -94,7 +95,11 @@ export const TopNavigation = ({
 
   return (
     <>
-      <div className="h-16 bg-[#1e1e1e]/80 border-b border-white/10 px-3 md:px-6 flex items-center justify-between backdrop-blur-lg shadow-sm transition-all duration-200">
+      <div className={`
+        fixed top-0 left-0 right-0 h-16 z-header
+        bg-[#1e1e1e]/80 border-b border-white/10 
+        px-3 md:px-6 flex items-center justify-between 
+        backdrop-blur-lg shadow-sm transition-all duration-200`}>
         {/* Left - Logo/Brand */}
         <div className="flex items-center">
           <h1 className="text-xl font-semibold text-white/90 tracking-wide flex items-center">
@@ -111,10 +116,13 @@ export const TopNavigation = ({
               key={item.label}
               variant="ghost"
               onClick={item.onClick}
-              className={`flex items-center gap-2.5 transition-all duration-200 relative
-                       ${item.isActive 
-                         ? 'text-white bg-white/15 shadow-inner' 
-                         : 'text-white/60 hover:text-white hover:bg-white/10'}`}
+              className={cn(
+                "flex items-center gap-2.5 transition-all duration-200 relative
+",
+                item.isActive 
+                  ? "text-white bg-white/15 shadow-inner" 
+               : "text-white/60 hover:text-white hover:bg-white/10"
+              )}
               aria-label={item.label}
               title={item.label}
             >
@@ -156,7 +164,7 @@ export const TopNavigation = ({
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.photoURL} alt={user.displayName || 'Profile'} />
                   <AvatarFallback className="bg-zinc-800 text-white uppercase">
-                    {user.displayName?.slice(0, 2) || <User className="h-6 w-6 text-white/70" />}
+                    {user.displayName?.slice(0, 2) ?? <User className="h-6 w-6 text-white/70" />}
                   </AvatarFallback>
                 </Avatar>
               </Button>

@@ -1,51 +1,68 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { MessageSquare, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { ChatHistory } from "../ChatHistory";
 import { ChatWindow } from "../ChatWindow";
 import { UserList } from "../UserList";
-import { useMediaQuery } from "@/hooks/use-media-query";
 import { useMessages } from "@/store/messaging";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export const ChatView = () => {
-  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const isMobile = useMediaQuery("(max-width: 768px)");
-  const isTablet = useMediaQuery("(max-width: 1024px)");
-  const { loading } = useMessages();
+interface PanelState {
+  left: boolean;
+  right: boolean;
+}
 
-  // On mobile/tablet, only show one panel at a time
-  const handleLeftPanelToggle = () => {
-    setLeftPanelOpen(!leftPanelOpen);
-    if (isMobile && !leftPanelOpen) {
-      setRightPanelOpen(false);
-    }
-  };
+interface ChatViewProps {
+  viewType?: 'chat' | 'groups';
+}
 
-  const handleRightPanelToggle = () => {
-    setRightPanelOpen(!rightPanelOpen);
-    if (isMobile && !rightPanelOpen) {
-      setLeftPanelOpen(false);
-    }
-  };
+export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
+  const isGroupsView = viewType === 'groups';
+  const [panels, setPanels] = useState<PanelState>({ left: true, right: true });
+  const { messages, isLoading, error } = useMessages();
+
+  const leftPanelOpen = panels.left;
+  const rightPanelOpen = panels.right;
+
+  const togglePanel = useCallback((panel: keyof PanelState) => {
+    setPanels(prev => ({
+      ...prev,
+      [panel]: !prev[panel]
+    }));
+  }, []);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full text-white/40">
+        <div className="text-center">
+          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-red-400" />
+          <p className="text-red-400">Error loading messages</p>
+          <p className="text-sm mt-2 text-white/30">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex w-full h-full relative">
       {/* Left Panel - Chat History */}
       <div
         className={cn(
-          "absolute md:relative z-20 w-[320px] bg-[#1e1e1e]/80 border-r border-white/10",
-          "transition-all duration-300 ease-in-out",
-          isMobile ? (leftPanelOpen ? "left-0" : "-left-[320px]") : "",
-          !leftPanelOpen && !isMobile ? "-ml-[320px]" : ""
+          "fixed left-0 w-[320px] h-full",
+          "bg-[#1e1e1e]/95 backdrop-blur-lg border-r border-white/10",
+          "transition-transform duration-300 ease-out will-change-transform z-20",
+          !panels.left && "-translate-x-full",
+          isLoading && "animate-pulse"
         )}
       >
         <div className="flex flex-col h-full backdrop-blur-lg">
           <div className="flex items-center justify-between p-4 border-b border-white/10 backdrop-blur-sm">
             <div className="flex items-center gap-3">
-              <MessageSquare className="h-5 w-5 text-white/70" />
-              <h2 className="text-lg font-semibold text-white/90 tracking-wide">Messages</h2>
+              {isGroupsView ? <Users className="h-5 w-5 text-white/70" /> :
+                <MessageSquare className="h-5 w-5 text-white/70" />}
+              <h2 className="text-lg font-semibold text-white/90 tracking-wide">
+                {isGroupsView ? 'Groups' : 'Messages'}
+              </h2>
             </div>
           </div>
           <ChatHistory />
@@ -56,29 +73,32 @@ export const ChatView = () => {
       <Button
         size="icon"
         variant="ghost"
-        onClick={handleLeftPanelToggle}
+        onClick={() => togglePanel('left')}
         className={cn(
-          "absolute left-0 top-1/2 -translate-y-1/2 z-30",
-          "bg-[#1e1e1e]/80 border border-white/10 backdrop-blur-lg",
-          "hover:bg-white/5 transition-colors",
-          leftPanelOpen ? "translate-x-[320px]" : "translate-x-0",
-          isMobile ? "md:hidden" : ""
+          "fixed left-0 top-1/2 -translate-y-1/2 z-30",
+          "bg-[#1e1e1e]/95 backdrop-blur-lg border border-white/10",
+          "hover:bg-white/10 transition-colors duration-200",
+          panels.left && "translate-x-[320px]",
+          isLoading && "opacity-50 cursor-not-allowed"
         )}
-        aria-label={leftPanelOpen ? "Hide message history" : "Show message history"}
+        disabled={isLoading}
+        aria-label={panels.left ? "Hide message history" : "Show message history"}
       >
         {leftPanelOpen ? (
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4 text-white/70" />
         ) : (
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4 text-white/70" />
         )}
       </Button>
 
-      {/* Center Panel */}
+      {/* Center Panel - Chat Window */}
       <div 
         className={cn(
-          "flex-1 flex flex-col overflow-hidden bg-[#1e1e1e]/80 mx-6 rounded-lg border border-white/10 backdrop-blur-lg",
-          "transition-all duration-300",
-          loading ? "animate-pulse" : ""
+          "flex-1 flex flex-col overflow-hidden bg-[#1e1e1e]/90 backdrop-blur-lg border border-white/10",
+          "transition-all duration-300 ease-out will-change-transform",
+          panels.left && "ml-[320px]",
+          panels.right && "mr-[320px]",
+          isLoading && "animate-pulse"
         )}
       >
         <ChatWindow />
@@ -87,11 +107,11 @@ export const ChatView = () => {
       {/* Right Panel - Users */}
       <div
         className={cn(
-          "absolute md:relative right-0 z-20 w-[320px] bg-[#1e1e1e]/80 border-l border-white/10",
-          "transition-all duration-300 ease-in-out",
-          isMobile ? (rightPanelOpen ? "right-0" : "-right-[320px]") : "",
-          !rightPanelOpen && !isMobile ? "-mr-[320px]" : "",
-          isTablet && !isMobile ? "w-[280px]" : ""
+          "fixed right-0 w-[320px] h-full",
+          "bg-[#1e1e1e]/95 backdrop-blur-lg border-l border-white/10",
+          "transition-transform duration-300 ease-out will-change-transform z-20",
+          !panels.right && "translate-x-full",
+          isLoading && "animate-pulse"
         )}
       >
         <div className="flex flex-col h-full backdrop-blur-lg">
@@ -101,7 +121,7 @@ export const ChatView = () => {
               <h2 className="text-lg font-semibold text-white/90 tracking-wide">Users</h2>
             </div>
           </div>
-          <UserList />
+          <UserList users={[]} />
         </div>
       </div>
 
@@ -109,34 +129,23 @@ export const ChatView = () => {
       <Button
         size="icon"
         variant="ghost"
-        onClick={handleRightPanelToggle}
+        onClick={() => togglePanel('right')}
         className={cn(
-          "absolute right-0 top-1/2 -translate-y-1/2 z-30",
-          "bg-[#1e1e1e]/80 border border-white/10 backdrop-blur-lg",
-          "hover:bg-white/5 transition-colors",
-          rightPanelOpen ? "-translate-x-[320px]" : "translate-x-0",
-          isMobile ? "md:hidden" : "",
-          isTablet && !isMobile ? "-translate-x-[280px]" : ""
+          "fixed right-0 top-1/2 -translate-y-1/2 z-30",
+          "bg-[#1e1e1e]/95 backdrop-blur-lg border border-white/10",
+          "hover:bg-white/10 transition-colors duration-200",
+          panels.right && "-translate-x-[320px]",
+          isLoading && "opacity-50 cursor-not-allowed"
         )}
-        aria-label={rightPanelOpen ? "Hide user list" : "Show user list"}
+        disabled={isLoading}
+        aria-label={panels.right ? "Hide user list" : "Show user list"}
       >
         {rightPanelOpen ? (
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4 text-white/70" />
         ) : (
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4 text-white/70" />
         )}
       </Button>
-
-      {/* Backdrop for mobile */}
-      {isMobile && (leftPanelOpen || rightPanelOpen) && (
-        <div
-          className="fixed inset-0 bg-black/50 z-10"
-          onClick={() => {
-            setLeftPanelOpen(false);
-            setRightPanelOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 };

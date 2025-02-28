@@ -27,8 +27,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Export named functions separately for consistent HMR
-// Hooks and Components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -41,28 +39,21 @@ export const RequireAuth = ({ children }: { children: React.ReactNode }): JSX.El
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  console.log("[RequireAuth] State:", { 
-    hasUser: !!user, 
-    loading, 
-    pathname: location.pathname,
-    state: location.state 
-  });
-
   if (loading) {
-    console.log("[RequireAuth] Still loading, showing loading state");
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-lg text-white/70">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#1e1e1e]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white/20" />
+          <p className="text-white/70">Loading your profile...</p>
+        </div>
       </div>
     );
   }
 
   if (!user) {
-    console.log("[RequireAuth] No user, redirecting to auth");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  console.log("[RequireAuth] User authenticated, rendering children");
   return <>{children}</>;
 };
 
@@ -73,21 +64,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
   const loading = authLoading || messagingLoading;
 
   useEffect(() => {
-    console.log("[AuthProvider] Initial mount");
     let mounted = true;
     let cleanupMessaging: (() => void) | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (!mounted) return;
 
-      console.log("[AuthProvider] Auth state changed:", {
-        userId: user?.uid,
-        isAuthenticated: !!user
-      });
-
       // Cleanup previous messaging subscription
       if (cleanupMessaging) {
-        console.log("[AuthProvider] Cleaning up previous messaging subscription");
         cleanupMessaging();
         cleanupMessaging = null;
       }
@@ -95,126 +79,101 @@ export function AuthProvider({ children }: { children: React.ReactNode }): JSX.E
       setUser(user);
       
       if (user) {
-        console.log("[AuthProvider] User authenticated, initializing messaging");
         setMessagingLoading(true);
         try {
-          // Initialize messaging store and keep cleanup function
-          cleanupMessaging = initializeMessaging(user.uid);
+          cleanupMessaging = await initializeMessaging(user.uid);
         } catch (error) {
-          console.error("[AuthProvider] Error initializing messaging:", error);
+          toast.error("Failed to initialize messaging");
+          console.error("[AuthProvider] Messaging initialization error:", error);
+        } finally {
           if (mounted) {
-            toast.error("Error loading messages. Please try again.");
+            setMessagingLoading(false);
           }
         }
-      } else {
-        // Reset messaging store on logout
-        useMessagingStore.setState({
-          conversations: [],
-          currentConversation: null,
-          currentConversationId: null,
-          messages: [],
-          status: { isLoading: false, error: null }
-        });
       }
-      
-      // Update loading states only if still mounted
+
       if (mounted) {
         setAuthLoading(false);
-        setMessagingLoading(false);
       }
     });
 
-    // Cleanup function
     return () => {
-      console.log("[AuthProvider] Cleanup effect");
       mounted = false;
       unsubscribeAuth();
       if (cleanupMessaging) {
         cleanupMessaging();
       }
-      // Reset loading states
-      setAuthLoading(false);
-      setMessagingLoading(false);
     };
   }, []);
 
-  console.log("[AuthProvider] Render:", { user: !!user, loading });
-
-  const signUp = async (email: string, password: string, username: string): Promise<void> => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      await createUserProfile(userCredential.user);
-    } catch (err) {
-      console.error("Sign up error:", err);
-      if (err instanceof FirebaseError) {
-        throw err;
-      }
-      throw new Error("Failed to create account");
-    }
+  const handleAuthError = (error: FirebaseError) => {
+    const errorMessage = error.code === 'auth/wrong-password' 
+      ? 'Invalid email or password'
+      : error.message;
+    toast.error(errorMessage);
   };
 
-  const signIn = async (email: string, password: string): Promise<void> => {
-    console.log("signIn function called", { email });
+  const signIn = async (email: string, password: string) => {
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      console.log("signIn successful");
-    } catch (err) {
-      console.error("Sign in error:", err);
-      if (err instanceof FirebaseError) {
-        throw err;
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        handleAuthError(error);
       }
-      throw new Error("Failed to sign in");
+      throw error;
     }
   };
 
-  const signUpWithGoogle = async (): Promise<User> => {
+  const signUpWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
     try {
-      console.log("Google Sign-in started");
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
-      
-      console.log("Calling signInWithPopup");
       const result = await signInWithPopup(auth, provider);
-      console.log("signInWithPopup successful", result);
-
-      await createUserProfile(result.user);
-      
+      if (result.user) {
+        await createUserProfile(result.user);
+      }
       return result.user;
-    } catch (err) {
-      console.error("Google sign in error:", err);
-      if (err instanceof FirebaseError) {
-        throw err;
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        handleAuthError(error);
       }
-      throw new Error("Failed to sign in with Google");
+      throw error;
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const signUp = async (email: string, password: string, username: string) => {
     try {
-      await signOut(auth);
-    } catch (err) {
-      console.error("Logout error:", err);
-      if (err instanceof FirebaseError) {
-        throw err;
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      if (result.user) {
+        await createUserProfile(result.user, { displayName: username });
       }
-      throw new Error("Failed to log out");
+    } catch (error) {
+      if (error instanceof FirebaseError) {
+        handleAuthError(error);
+      }
+      throw error;
     }
   };
 
-  const value: AuthContextType = {
+  const logout = async () => {
+    if (user) {
+      try {
+        await signOut(auth);
+        useMessagingStore.getState().reset();
+      } catch (error) {
+        toast.error("Failed to sign out");
+        throw error;
+      }
+    }
+  };
+
+  const value = {
     user,
     loading,
     signIn,
-    signUp,
     signUpWithGoogle,
+    signUp,
     logout,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
-
-export default AuthProvider;

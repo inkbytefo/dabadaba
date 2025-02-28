@@ -8,23 +8,53 @@ The `src` directory is the main source code directory of the application. It con
 
 ### Subdirectories
 
-- **`components`**: This directory contains React components used throughout the application. It is further organized into subdirectories:
+- **`components`**: This directory contains React components used throughout the application. It is organized into subdirectories:
     - **`ui`**: Contains reusable UI primitives and components built using Shadcn UI. These components are designed to be generic and reusable across different parts of the application.
-- **`hooks`**: This directory contains custom React hooks. These hooks encapsulate reusable logic and provide a way to abstract complex functionalities.
-- **`lib`**: This directory contains library code and utility functions. It includes files for Firebase initialization, link preview generation, and general utility functions.
-- **`pages`**: This directory contains React components that represent different pages or routes of the application. It includes:
-    - **`auth`**: Contains components related to authentication pages like login, register, and auth callback.
-- **`services`**: This directory contains services for interacting with backend services or external APIs. It currently includes a service for Firebase.
-- **`store`**: This directory contains the Zustand store for application state management. It includes state slices related to messaging.
-- **`types`**: This directory contains TypeScript type definitions for the application's data models and interfaces.
-- **`integrations`**: This directory is currently empty and might be intended for future integrations with external services.
-- **`lib`**: This directory contains utility functions and library code.
+    - **`MessengerLayout`**: Contains layout components specific to the messenger interface, including ChatView and GroupsView.
+    
+- **`hooks`**: Contains custom React hooks that encapsulate reusable logic:
+    - `use-debounce`: For debouncing function calls
+    - `use-media-query`: For responsive design media queries
+    - `use-mobile`: For mobile device detection
+    - `use-toast`: For managing toast notifications
 
-### Files
+- **`lib`**: Contains utility functions and library code:
+    - **`firebase`**: Firebase initialization and configuration
+    - `link-preview`: Utility for generating link previews
+    - `utils`: General utility functions
 
-- **`App.tsx`**: The main application component that sets up the application layout and routing.
-- **`index.css`**: Global CSS styles for the application.
-- **`main.tsx`**: Entry point of the React application, responsible for rendering the `App` component.
-- **`vite-env.d.ts`**: TypeScript declaration file for Vite environment variables.
+- **`pages`**: Contains React components that represent different routes:
+    - **`auth`**: Authentication-related pages (Login, Register, ForgotPassword, AuthCallback)
+    - `AppSettings`: Application settings page
+    - `Index`: Main landing page
+    - `NotFound`: 404 error page
+    - `Settings`: User settings page
 
-This document will be expanded with more details about each subdirectory and important files in the following sections.
+- **`services`**: Contains services for backend interaction:
+    - **`auth`**: Firebase authentication services
+    - **`firestore`**: Firestore database services (conversations, friends, groups, messages, users)
+    - **`storage`**: Firebase storage services
+
+- **`store`**: Contains Zustand stores for state management:
+    - `messaging`: State management for messaging features
+
+- **`types`**: Contains TypeScript type definitions:
+    - `environment.d.ts`: Environment variable types
+    - `models.ts`: Data model interfaces
+
+### Root Files
+
+- **`App.tsx`**: Main application component with routing and layout setup
+- **`index.css`**: Global CSS styles
+- **`main.tsx`**: Application entry point
+- **`vite-env.d.ts`**: Vite environment type declarations
+
+## Project Configuration Files
+
+- **`.firebaserc`**: Firebase project configuration
+- **`firebase.json`**: Firebase service configuration
+- **`firestore.rules`**: Firestore security rules
+- **`storage.rules`**: Firebase Storage security rules
+- **`vite.config.ts`**: Vite build configuration
+- **`tsconfig.json`**: TypeScript configuration
+- **`tailwind.config.ts`**: Tailwind CSS configuration

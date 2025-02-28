@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { MessageSquare, ChevronLeft, ChevronRight, Users } from "lucide-react";
 import { ChatHistory } from "../ChatHistory";
 import { ChatWindow } from "../ChatWindow";
@@ -20,8 +20,11 @@ interface ChatViewProps {
 export const ChatView = ({ viewType = 'chat' }: ChatViewProps) => {
   const isGroupsView = viewType === 'groups';
   const [panels, setPanels] = useState<PanelState>({ left: true, right: true });
-  const { messages, isLoading: messagesLoading, error: messagesError } = useMessages();
-  const { users, isLoading: usersLoading, error: usersError } = useUsers();
+  const messagesData = useMessages();
+  const usersData = useUsers();
+  
+  const { messages, isLoading: messagesLoading, error: messagesError } = useMemo(() => messagesData, [messagesData]);
+  const { users, isLoading: usersLoading, error: usersError } = useMemo(() => usersData, [usersData]);
 
   const leftPanelOpen = panels.left;
   const rightPanelOpen = panels.right;

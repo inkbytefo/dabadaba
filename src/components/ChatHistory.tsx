@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, KeyboardEvent, useState } from 'react';
+import React, { useEffect, useRef, KeyboardEvent, useState, useMemo, useCallback } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { MessageSquare, Search, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';

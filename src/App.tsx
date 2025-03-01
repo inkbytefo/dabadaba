@@ -7,55 +7,64 @@ import { Register } from "@/pages/auth/Register";
 import { MessengerLayout } from "@/components/MessengerLayout";
 import { ChatView } from "@/components/MessengerLayout/ChatView";
 import { ForgotPassword } from "@/pages/auth/ForgotPassword";
-import AppSettings from "@/pages/AppSettings";
-import { ProfileSettings } from "@/components/ProfileSettings";
-import { useUIStore } from "@/store/ui";
+import Dashboard from "@/components/Dashboard";
+import { AppLayout } from "@/components/AppLayout";
+import { Settings } from "@/pages/Settings";
+import { ErrorBoundary } from "@/components/ErrorBoundary"; // Import ErrorBoundary
 
 function App() {
-  const { modals, setModalState } = useUIStore();
-
   return (
     <div className="app-root">
-      <Router>
-        <ThemeProvider>
-          <AuthProvider>
-            <Toaster position="top-center" richColors closeButton />
-            <div className="h-full flex flex-col">
+      <ErrorBoundary> {/* Wrap Router with ErrorBoundary */}
+        <Router>
+          <ThemeProvider>
+            <AuthProvider>
+              <Toaster position="top-center" richColors closeButton />
               <Routes>
                 {/* Public Routes */}
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/auth/forgot-password" element={<ForgotPassword />} />
 
-                {/* Protected Routes */}
-                <Route element={<RequireAuth><MessengerLayout /></RequireAuth>}>
-                  <Route index element={<ChatView />} />
-                  <Route path="groups" element={<ChatView viewType="groups" />} />
-                  <Route path="settings" element={
-                    <div className="flex items-center justify-center w-full h-full p-6">
-                      <ProfileSettings
-                        open={modals.profileSettings}
-                        onOpenChange={(open) => setModalState('profileSettings', open)}
-                      />
-                    </div>
-                  } />
-                  <Route path="settings/app" element={
-                    <div className="flex items-center justify-center w-full h-full p-6">
-                      <AppSettings
-                        open={modals.appSettings}
-                        onOpenChange={(open) => setModalState('appSettings', open)}
-                      />
-                    </div>
-                  } />
+                {/* Protected Routes - AppLayout ile sarmalanmış */}
+                <Route element={<RequireAuth />}>
+                  <Route element={<AppLayout />}>
+                    {/* Ana Sayfa */}
+                    <Route index element={<Dashboard />} />
+
+                    {/* Mesajlaşma Routes */}
+                    <Route path="messages" element={<MessengerLayout />}>
+                      <Route index element={<ChatView />} />
+                      <Route path="groups" element={<ChatView viewType="groups" />} />
+                    </Route>
+
+                    {/* Ayarlar */}
+                    <Route path="settings" element={<Settings />} />
+
+                    {/* Diğer Sayfalar */}
+                    <Route path="notifications" element={
+                      <div className="container max-w-7xl mx-auto p-6">
+                        <h1 className="text-2xl font-semibold mb-4">Bildirimler</h1>
+                        <p className="text-muted-foreground">Bu özellik yakında kullanıma açılacak...</p>
+                      </div>
+                    } />
+                    
+                    <Route path="calls" element={
+                      <div className="container max-w-7xl mx-auto p-6">
+                        <h1 className="text-2xl font-semibold mb-4">Aramalar</h1>
+                        <p className="text-muted-foreground">Bu özellik yakında kullanıma açılacak...</p>
+                      </div>
+                    } />
+                  </Route>
                 </Route>
 
                 {/* Fallback Route */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </div>
-          </AuthProvider>
-        </ThemeProvider>
-      </Router>
+            </AuthProvider>
+          </ThemeProvider>
+        </Router>
+      </ErrorBoundary>
     </div>
   );
 }

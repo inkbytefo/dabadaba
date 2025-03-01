@@ -1,127 +1,220 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
-import { useMessagingStore, MessagingState } from '../store/messaging';
+import { collection, onSnapshot, query, where, orderBy, limit } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { useMessagingStore } from '@/store/messaging';
 import { Button } from './ui/button';
+import { Card } from './ui/card';
+import {
+  MessageSquare,
+  Users,
+  Bell,
+  Phone,
+  UserPlus,
+  ChevronRight
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 // TypeScript interfaces for data structure
-interface Conversation {
-  id: string;
-  user: { displayName: string; photoURL: string };
-  lastMessage: string;
-  timestamp: Date;
+interface DashboardStats {
+  totalConversations: number;
+  unreadMessages: number;
+  activeChats: number;
+  recentContacts: number;
 }
 
-interface GroupChat {
-  id: string;
-  name: string;
-  description: string;
-  timestamp: Date;
-}
-
-const Dashboard = () => {
-  // Authentication state
+const Dashboard: React.FC = () => {
   const [user, loading, error] = useAuthState(auth);
+  const navigate = useNavigate();
+  const [stats, setStats] = React.useState<DashboardStats>({
+    totalConversations: 0,
+    unreadMessages: 0,
+    activeChats: 0,
+    recentContacts: 0
+  });
 
-  // Local state for conversations, group chats, and notifications
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
-  const [notification, setNotification] = useState<{ message: string } | null>(null);
-
-  // Zustand store for user status
-  const userStatus = useMessagingStore((state: MessagingState) => state.userStatus ?? 'Online');
-
-  // Fetch real-time data from Firebase
-  useEffect(() => {
+  // İstatistikleri yükle
+  React.useEffect(() => {
     if (!user) return;
 
-    // Conversations listener
-    const unsubscribeConvs = onSnapshot(collection(db, 'conversations'), (snapshot) => {
-      const convs = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp.toDate(),
-      })) as Conversation[];
-      setConversations(convs);
-    });
+    const unsubscribe = onSnapshot(
+      query(
+        collection(db, 'conversations'),
+        where('participants', 'array-contains', user.uid),
+        orderBy('updatedAt', 'desc'),
+        limit(10)
+      ),
+      (snapshot) => {
+        const activeChats = snapshot.docs.filter(doc => 
+          doc.data().lastMessageTimestamp >= new Date(Date.now() - 24 * 60 * 60 * 1000)
+        ).length;
 
-    // Group chats listener
-    const unsubscribeGroups = onSnapshot(collection(db, 'groupChats'), (snapshot) => {
-      const groups = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp.toDate(),
-      })) as GroupChat[];
-      setGroupChats(groups);
-    });
+        const unreadMessages = snapshot.docs.reduce(
+          (total, doc) => total + (doc.data().unreadCount || 0),
+          0
+        );
 
-    return () => {
-      unsubscribeConvs();
-      unsubscribeGroups();
-    };
+        setStats({
+          totalConversations: snapshot.size,
+          unreadMessages,
+          activeChats,
+          recentContacts: snapshot.docs.reduce((total, doc) => 
+            total + Object.keys(doc.data().participants || {}).length, 0
+          )
+        });
+      }
+    );
+
+    return () => unsubscribe();
   }, [user]);
 
-  if (loading) return <div className="flex-center h-screen">Loading...</div>;
-  if (error) return <div className="flex-center h-screen text-red-500">Error: {error.message}</div>;
-  if (!user) return <div className="flex-center h-screen">Please log in</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary" />
+      </div>
+    );
+  }
 
-  return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        {/* Conversations Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {conversations.map((conv) => (
-            <div key={conv.id} className="glass-card hover:scale-[1.02] transition-transform">
-              <div className="flex items-start gap-3">
-                <img
-                  src={conv.user.photoURL || "/placeholder.svg"}
-                  alt={conv.user.displayName}
-                  className="w-12 h-12 rounded-full ring-2 ring-white/10"
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-white/90">{conv.user.displayName}</h3>
-                  <p className="text-sm text-white/60 truncate">{conv.lastMessage}</p>
-                  <p className="text-xs text-white/40 mt-1">
-                    {conv.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm" className="mt-1">
-                  View
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500">Error: {error.message}</div>
+      </div>
+    );
+  }
 
-        {/* Group Chats Section */}
-        <div>
-          <h2 className="text-xl font-semibold text-white/90 mb-4">Active Group Chats</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {groupChats.map((chat) => (
-              <div key={chat.id} className="glass-card">
-                <h3 className="font-medium text-white/90">{chat.name}</h3>
-                <p className="text-sm text-white/60 mt-1">{chat.description}</p>
-                <p className="text-xs text-white/40 mt-2">
-                  {chat.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            ))}
-          </div>
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-muted-foreground">Lütfen giriş yapın</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Notification Popup */}
-      {notification && (
-        <div className="fixed bottom-4 right-4 animate-slide-up">
-          <div className="glass-card bg-blue-500/90 text-white">
-            {notification.message}
-          </div>
+  const quickActions = [
+    {
+      title: 'Yeni Mesaj',
+      icon: MessageSquare,
+      onClick: () => navigate('/messages'),
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10'
+    },
+    {
+      title: 'Gruplar',
+      icon: Users,
+      onClick: () => navigate('/messages/groups'),
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10'
+    },
+    {
+      title: 'Bildirimler',
+      icon: Bell,
+      onClick: () => navigate('/notifications'),
+      color: 'text-yellow-500',
+      bgColor: 'bg-yellow-500/10'
+    },
+    {
+      title: 'Aramalar',
+      icon: Phone,
+      onClick: () => navigate('/calls'),
+      color: 'text-green-500',
+      bgColor: 'bg-green-500/10'
+    }
+  ];
+
+  return (
+    <div className="container max-w-7xl mx-auto px-4 py-8">
+      {/* Hoşgeldin Mesajı */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold mb-2">
+          Hoş geldin, {user.displayName || 'Kullanıcı'}
+        </h1>
+        <p className="text-muted-foreground">
+          İşte hesabınızla ilgili güncel bilgiler ve istatistikler
+        </p>
+      </div>
+
+      {/* İstatistik Kartları */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Toplam Konuşma"
+          value={stats.totalConversations}
+          icon={MessageSquare}
+          trend="+5% geçen haftaya göre"
+        />
+        <StatCard
+          title="Okunmamış Mesaj"
+          value={stats.unreadMessages}
+          icon={Bell}
+          trend="2 yeni mesaj"
+          highlight={stats.unreadMessages > 0}
+        />
+        <StatCard
+          title="Aktif Sohbetler"
+          value={stats.activeChats}
+          icon={Users}
+          trend="3 aktif konuşma"
+        />
+        <StatCard
+          title="Son Kişiler"
+          value={stats.recentContacts}
+          icon={UserPlus}
+          trend="7 gün içinde"
+        />
+      </div>
+
+      {/* Hızlı Erişim */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold mb-4">Hızlı Erişim</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {quickActions.map((action) => (
+            <Card
+              key={action.title}
+              className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer"
+              onClick={action.onClick}
+            >
+              <div className={`${action.bgColor} w-12 h-12 rounded-lg flex items-center justify-center mb-3`}>
+                <action.icon className={`h-6 w-6 ${action.color}`} />
+              </div>
+              <h3 className="font-medium">{action.title}</h3>
+              <ChevronRight className="h-4 w-4 text-muted-foreground mt-2" />
+            </Card>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 };
+
+// İstatistik Kartı Bileşeni
+const StatCard = ({ 
+  title, 
+  value, 
+  icon: Icon, 
+  trend, 
+  highlight 
+}: { 
+  title: string; 
+  value: number; 
+  icon: any; 
+  trend: string; 
+  highlight?: boolean; 
+}) => (
+  <Card className={`p-6 ${highlight ? 'border-blue-500/50 shadow-blue-500/10' : ''}`}>
+    <div className="flex justify-between items-start mb-4">
+      <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+      <Icon className="h-5 w-5 text-muted-foreground" />
+    </div>
+    <div className="space-y-1">
+      <p className="text-2xl font-semibold">{value}</p>
+      <p className="text-sm text-muted-foreground">{trend}</p>
+    </div>
+  </Card>
+);
 
 export default Dashboard;

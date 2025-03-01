@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/AuthProvider';
-import { Button, buttonVariants, type ButtonProps } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import {
   User,
   Users,
@@ -11,15 +11,6 @@ import {
   Settings,
   LogOut
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useMediaQuery } from '@/hooks/use-media-query';
-import { ProfileSettings } from './ProfileSettings';
-import AppSettings from '@/pages/AppSettings';
-import { TeamList } from './TeamList';
-import {
-  Dialog,
-  DialogContent
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,25 +18,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { useUIStore } from '@/store/ui';
 
 interface TopNavigationProps {
-  onViewChange: (view: 'chat' | 'groups') => void;
   unreadNotifications?: number;
   missedCalls?: number;
 }
 
 export const TopNavigation = ({ 
-  onViewChange, 
   unreadNotifications = 0, 
   missedCalls = 0 
 }: TopNavigationProps) => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeView, setActiveView] = useState<'chat' | 'groups'>('chat');
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAppSettings, setShowAppSettings] = useState(false);
-  const [showTeams, setShowTeams] = useState(false);
+  const { activeView, setActiveView } = useUIStore();
 
   if (!user) return null;
 
@@ -58,150 +45,191 @@ export const TopNavigation = ({
     }
   };
 
-  const handleViewChange = (view: 'chat' | 'groups') => {
-    setActiveView(view);
-    onViewChange(view);
-    if (view === 'chat') {
-      navigate('/');
-    }
-  };
+  const isActive = (path: string) => location.pathname.startsWith(path);
 
   const navItems = [
     {
       icon: MessageSquare,
       label: 'Chat',
-      onClick: () => handleViewChange('chat'),
-      isActive: activeView === 'chat',
+      onClick: () => {
+        setActiveView('chat');
+        navigate('/messages');
+      },
+      isActive: activeView === 'chat' && isActive('/messages'),
+      color: 'from-blue-500 to-indigo-500',
     },
     {
       icon: Users,
       label: 'Groups',
-      onClick: () => handleViewChange('groups'),
-      isActive: activeView === 'groups',
+      onClick: () => {
+        setActiveView('groups');
+        navigate('/messages/groups');
+      },
+      isActive: activeView === 'groups' && isActive('/messages/groups'),
+      color: 'from-purple-500 to-pink-500',
     },
     {
       icon: Bell,
       label: 'Notifications',
-      onClick: () => {},
-      isActive: false,
+      onClick: () => navigate('/notifications'),
+      isActive: isActive('/notifications'),
+      badge: unreadNotifications,
+      color: 'from-amber-500 to-orange-500',
     },
     {
       icon: Phone,
       label: 'Calls',
-      onClick: () => {},
-      isActive: false,
+      onClick: () => navigate('/calls'),
+      isActive: isActive('/calls'),
+      badge: missedCalls,
+      color: 'from-emerald-500 to-teal-500',
     },
   ];
 
+  const userInitials = user.displayName 
+    ? user.displayName.slice(0, 2).toUpperCase()
+    : 'U';
+
   return (
     <>
-      <div className={`
-        fixed top-0 left-0 right-0 h-16 z-header
-        bg-[#1e1e1e]/80 border-b border-white/10 
-        px-3 md:px-6 flex items-center justify-between 
-        backdrop-blur-lg shadow-sm transition-all duration-200`}>
-        {/* Left - Logo/Brand */}
-        <div className="flex items-center">
-          <h1 className="text-xl font-semibold text-white/90 tracking-wide flex items-center">
-            <span className="hidden md:inline">XCORD</span>
-            <span className="md:hidden">X</span>
-            <span className="text-xs ml-2 text-white/50 font-normal hidden md:inline">application</span>
-          </h1>
-        </div>
+      <div className={cn(
+        "fixed top-0 left-0 right-0 h-16 z-header",
+        "bg-[#1e1e1e]/80 backdrop-blur-xl",
+        "border-b border-white/[0.02]"
+      )}>
+        <div className="h-full px-4 md:px-6 flex items-center justify-between">
+          {/* Sol - Logo/Brand */}
+          <div className="flex items-center gap-8">
+            <h1 className={cn(
+              "text-xl font-semibold tracking-wide flex items-center",
+              "px-3 py-1.5 rounded-lg relative overflow-hidden group"
+            )}>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="hidden md:inline relative z-10">XCORD</span>
+              <span className="md:hidden relative z-10">X</span>
+              <span className="text-xs ml-2 text-white/50 font-normal hidden md:inline relative z-10">application</span>
+            </h1>
 
-        {/* Center - Navigation */}
-        <div className="flex items-center gap-1 md:gap-3">
-          {navItems.map((item) => (
-            <Button
-              key={item.label}
-              onClick={item.onClick}
-                className={cn(
-                  buttonVariants({ variant: "ghost", size: "default" }),
-                  "flex items-center gap-2.5 transition-all duration-200 relative",
-                  item.isActive ? "text-white bg-white/15 shadow-inner" : "text-white/60 hover:text-white hover:bg-white/10"
-                )}
-              aria-label={item.label}
-              title={item.label}
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="hidden md:inline">{item.label}</span>
-              {item.label === 'Notifications' && unreadNotifications > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
-                  {unreadNotifications}
-                </span>
-              )}
-              {item.label === 'Calls' && missedCalls > 0 && (
-                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-xs flex items-center justify-center">
-                  {missedCalls}
-                </span>
-              )}
-            </Button>
-          ))}
-        </div>
+            {/* Ana Navigasyon */}
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Button
+                  key={item.label}
+                  onClick={item.onClick}
+                  variant="ghost"
+                  className={cn(
+                    "relative px-3 py-1.5 rounded-lg transition-all duration-300",
+                    "hover:bg-white/5 group",
+                    item.isActive && "bg-white/5"
+                  )}
+                >
+                  <div className={cn(
+                    "absolute inset-0 opacity-0 bg-gradient-to-r",
+                    item.color,
+                    "group-hover:opacity-10 transition-opacity",
+                    item.isActive && "opacity-10"
+                  )} />
+                  <item.icon className="h-4 w-4 mr-2 relative z-10" />
+                  <span className="relative z-10">{item.label}</span>
+                  {item.badge ? (
+                    <span className={cn(
+                      "absolute -top-1 -right-1 h-4 w-4 rounded-full",
+                      "text-xs flex items-center justify-center text-white z-10",
+                      "bg-gradient-to-r",
+                      item.color
+                    )}>
+                      {item.badge}
+                    </span>
+                  ) : null}
+                </Button>
+              ))}
+            </nav>
+          </div>
 
-        {/* Right - User Controls */}
-        <div className="flex items-center gap-1 md:gap-3">
-          <Button
-            onClick={() => setShowAppSettings(true)}
-            className={cn(
-              buttonVariants({ variant: "ghost", size: "icon" }),
-              "text-white/60 hover:text-white hover:bg-white/10 transition-colors duration-200"
-            )}
-            aria-label="Settings"
-            title="Settings"
-          >
-            <Settings className="h-5 w-5" />
-          </Button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          {/* Mobile Navigation */}
+          <nav className="md:hidden flex items-center gap-1">
+            {navItems.map((item) => (
               <Button
+                key={item.label}
+                onClick={item.onClick}
+                variant="ghost"
+                size="icon"
                 className={cn(
-                  buttonVariants({ variant: "ghost", size: "icon" }),
-                  "relative h-10 w-10 rounded-full overflow-hidden ring-2 ring-white/10 hover:ring-white/20 transition-all duration-200"
+                  "relative rounded-lg transition-all duration-300",
+                  "hover:bg-white/5 group",
+                  item.isActive && "bg-white/5"
                 )}
               >
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={user.photoURL} alt={user.displayName || 'Profile'} />
-                  <AvatarFallback className="bg-zinc-800 text-white uppercase">
-                    {user.displayName?.slice(0, 2) ?? <User className="h-6 w-6 text-white/70" />}
-                  </AvatarFallback>
-                </Avatar>
+                <div className={cn(
+                  "absolute inset-0 opacity-0 bg-gradient-to-r",
+                  item.color,
+                  "group-hover:opacity-10 transition-opacity",
+                  item.isActive && "opacity-10"
+                )} />
+                <item.icon className="h-4 w-4 relative z-10" />
+                {item.badge ? (
+                  <span className={cn(
+                    "absolute -top-1 -right-1 h-4 w-4 rounded-full",
+                    "text-xs flex items-center justify-center text-white z-10",
+                    "bg-gradient-to-r",
+                    item.color
+                  )}>
+                    {item.badge}
+                  </span>
+                ) : null}
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-[#1e1e1e]/95 backdrop-blur-lg border-white/10 shadow-xl">
-              <DropdownMenuItem
-                onClick={() => setShowSettings(true)}
-                className="text-white/60 hover:text-white focus:text-white hover:bg-white/10 focus:bg-white/15 transition-colors duration-200"
-              >
-                <User className="mr-2 h-4 w-4" />
-                Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-red-400 hover:text-red-300 focus:text-red-300 hover:bg-red-500/10 focus:bg-red-500/15 transition-colors duration-200"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            ))}
+          </nav>
+
+          {/* Sağ - Kullanıcı Kontrolleri */}
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => navigate('/settings')}
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "relative rounded-lg transition-all duration-300",
+                "hover:bg-white/5 group"
+              )}
+            >
+              <div className="absolute inset-0 opacity-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 group-hover:opacity-100 transition-opacity" />
+              <Settings className="h-5 w-5 relative z-10" />
+            </Button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "relative h-8 w-8 rounded-full",
+                    "hover:bg-white/5 group"
+                  )}
+                >
+                  <div className="absolute inset-0 opacity-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 group-hover:opacity-100 transition-opacity rounded-full" />
+                  <Avatar className="h-8 w-8">
+                    {user.photoURL && (
+                      <AvatarImage src={user.photoURL} alt={user.displayName || 'Kullanıcı'} />
+                    )}
+                    <AvatarFallback>
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="mt-1 bg-[#1e1e1e]/95 backdrop-blur-lg border-white/[0.02]">
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <User className="mr-2 h-4 w-4" />
+                  Profil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Çıkış Yap
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
-
-      <ProfileSettings 
-        open={showSettings} 
-        onOpenChange={setShowSettings}
-      />
-      <AppSettings
-        open={showAppSettings}
-        onOpenChange={setShowAppSettings}
-      />
-      <Dialog open={showTeams} onOpenChange={setShowTeams}>
-        <DialogContent className="sm:max-w-[600px] p-0">
-          <TeamList onGroupSelect={() => {}} />
-        </DialogContent>
-      </Dialog>
     </>
   );
 };

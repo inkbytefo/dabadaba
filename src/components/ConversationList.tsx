@@ -3,6 +3,8 @@ import { useConversations, Conversation } from '@/store/messaging';
 import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
 import { useMessagingStore } from '@/store/messaging';
+import { useTheme } from './ThemeProvider'; // Import useTheme hook
+import { cn } from '@/lib/utils';
 
 interface ConversationListProps {
   viewType?: 'chat' | 'groups';
@@ -11,6 +13,7 @@ interface ConversationListProps {
 export const ConversationList: React.FC<ConversationListProps> = React.memo(({ viewType = 'chat' }) => {
   const { conversations, isLoading } = useConversations();
   const setActiveConversation = useMessagingStore((state) => state.setActiveConversation);
+  const { theme } = useTheme(); // Use useTheme hook
 
   const filteredConversations = React.useMemo(() => conversations.filter(conv =>
     viewType === 'groups' ? conv.type === 'group' : conv.type === 'private'
@@ -31,7 +34,10 @@ export const ConversationList: React.FC<ConversationListProps> = React.memo(({ v
             className="w-10 h-10 rounded-full object-cover"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className={cn(
+            "w-10 h-10 rounded-full flex items-center justify-center",
+            theme === 'dark' ? 'bg-primary/30 text-primary-foreground' : 'bg-primary/10 text-primary' // Apply theme background color and text color
+          )}>
             <span className="text-lg font-semibold text-primary">
               {conversation.name.charAt(0)}
             </span>
@@ -39,7 +45,7 @@ export const ConversationList: React.FC<ConversationListProps> = React.memo(({ v
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="font-medium truncate">{conversation.name}</h3>
+            <h3 className="font-medium truncate" style={{ color: theme === 'dark' ? '#fff' : '#000' }}>{conversation.name}</h3> {/* Apply theme text color */}
             {conversation.lastMessageTimestamp && (
               <span className="text-xs text-muted-foreground whitespace-nowrap">
                 {new Date(conversation.lastMessageTimestamp.toMillis()).toLocaleTimeString([], {
@@ -64,7 +70,7 @@ export const ConversationList: React.FC<ConversationListProps> = React.memo(({ v
         </div>
       </div>
     </Button>
-  ), [setActiveConversation]);
+  ), [setActiveConversation, theme]); // Add theme to useCallback dependencies
 
   if (isLoading) {
     return (
@@ -88,3 +94,5 @@ export const ConversationList: React.FC<ConversationListProps> = React.memo(({ v
     </ScrollArea>
   );
 });
+
+export default ConversationList;

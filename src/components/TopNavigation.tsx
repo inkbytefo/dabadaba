@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { useUIStore } from '@/store/ui';
+import { useTheme } from './ThemeProvider'; // Import useTheme hook
 
 interface TopNavigationProps {
   unreadNotifications?: number;
@@ -33,6 +34,7 @@ export const TopNavigation = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { activeView, setActiveView } = useUIStore();
+  const { theme } = useTheme(); // Use useTheme hook
 
   if (!user) return null;
 
@@ -75,7 +77,7 @@ export const TopNavigation = ({
       isActive: isActive('/notifications'),
       badge: unreadNotifications,
       color: 'from-amber-500 to-orange-500',
-    },
+      },
     {
       icon: Phone,
       label: 'Calls',
@@ -94,7 +96,8 @@ export const TopNavigation = ({
     <>
       <div className={cn(
         "fixed top-0 left-0 right-0 h-16 z-header",
-        "bg-[#1e1e1e]/80 backdrop-blur-xl",
+        theme === 'dark' ? "bg-[#1e1e1e]/80" : "bg-white/80", // Apply theme background color
+        "backdrop-blur-xl",
         "border-b border-white/[0.02]"
       )}>
         <div className="h-full px-4 md:px-6 flex items-center justify-between">
@@ -102,11 +105,11 @@ export const TopNavigation = ({
           <div className="flex items-center gap-8">
             <h1 className={cn(
               "text-xl font-semibold tracking-wide flex items-center",
-              "px-3 py-1.5 rounded-lg relative overflow-hidden group"
+              "px-3 py-1.5 rounded-lg relative overflow-hidden group",
             )}>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="hidden md:inline relative z-10">XCORD</span>
-              <span className="md:hidden relative z-10">X</span>
+              <span className={cn("hidden md:inline relative z-10", theme === 'dark' ? 'text-white' : 'text-black')}>XCORD</span> {/* Apply theme text color */}
+              <span className={cn("md:hidden relative z-10", theme === 'dark' ? 'text-white' : 'text-black')}>X</span> {/* Apply theme text color */}
               <span className="text-xs ml-2 text-white/50 font-normal hidden md:inline relative z-10">application</span>
             </h1>
 
@@ -120,7 +123,7 @@ export const TopNavigation = ({
                   className={cn(
                     "relative px-3 py-1.5 rounded-lg transition-all duration-300",
                     "hover:bg-white/5 group",
-                    item.isActive && "bg-white/5"
+                    item.isActive && "bg-white/5",
                   )}
                 >
                   <div className={cn(
@@ -129,8 +132,8 @@ export const TopNavigation = ({
                     "group-hover:opacity-10 transition-opacity",
                     item.isActive && "opacity-10"
                   )} />
-                  <item.icon className="h-4 w-4 mr-2 relative z-10" />
-                  <span className="relative z-10">{item.label}</span>
+                  <item.icon className={cn("h-4 w-4 mr-2 relative z-10", theme === 'dark' ? 'text-white' : 'text-black')} /> {/* Apply theme text color */}
+                  <span className={cn("relative z-10", theme === 'dark' ? 'text-white' : 'text-black')}>{item.label}</span> {/* Apply theme text color */}
                   {item.badge ? (
                     <span className={cn(
                       "absolute -top-1 -right-1 h-4 w-4 rounded-full",
@@ -166,7 +169,7 @@ export const TopNavigation = ({
                   "group-hover:opacity-10 transition-opacity",
                   item.isActive && "opacity-10"
                 )} />
-                <item.icon className="h-4 w-4 relative z-10" />
+                <item.icon className={cn("h-4 w-4 relative z-10", theme === 'dark' ? 'text-white' : 'text-black')} /> {/* Apply theme text color */}
                 {item.badge ? (
                   <span className={cn(
                     "absolute -top-1 -right-1 h-4 w-4 rounded-full",
@@ -193,7 +196,7 @@ export const TopNavigation = ({
               )}
             >
               <div className="absolute inset-0 opacity-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 group-hover:opacity-100 transition-opacity" />
-              <Settings className="h-5 w-5 relative z-10" />
+              <Settings className={cn("h-5 w-5 relative z-10", theme === 'dark' ? 'text-white' : 'text-black')} /> {/* Apply theme text color */}
             </Button>
 
             <DropdownMenu>
@@ -216,9 +219,9 @@ export const TopNavigation = ({
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="mt-1 bg-[#1e1e1e]/95 backdrop-blur-lg border-white/[0.02]">
+              <DropdownMenuContent align="end" className={cn("mt-1 backdrop-blur-lg border-white/[0.02]", theme === 'dark' ? 'bg-[#1e1e1e]/95' : 'bg-white/95')}> {/* Apply theme background color */}
                 <DropdownMenuItem onClick={() => navigate('/settings')}>
-                  <User className="mr-2 h-4 w-4" />
+                  <User className={cn("mr-2 h-4 w-4", theme === 'dark' ? 'text-white' : 'text-black')} /> {/* Apply theme text color */}
                   Profil
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleLogout} className="text-red-500">

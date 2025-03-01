@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider, RequireAuth } from "@/components/AuthProvider";
+import { AuthProvider, RequireAuth, useAuth } from "@/components/AuthProvider"; // Import useAuth hook
 import Auth from "@/pages/auth/Auth";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { Register } from "@/pages/auth/Register";
@@ -13,6 +13,8 @@ import { Settings } from "@/pages/Settings";
 import { ErrorBoundary } from "@/components/ErrorBoundary"; // Import ErrorBoundary
 
 function App() {
+  const { isLoading: authIsLoading } = useAuth(); // Get isLoading from AuthProvider
+
   return (
     <div className="app-root">
       <ErrorBoundary> {/* Wrap Router with ErrorBoundary */}
@@ -28,7 +30,7 @@ function App() {
 
                 {/* Protected Routes - AppLayout ile sarmalanmış */}
                 <Route element={<RequireAuth />}>
-                  <Route element={<AppLayout />}>
+                  <Route element={<AppLayout isLoading={authIsLoading} />}> {/* Pass isLoading to AppLayout */}
                     {/* Ana Sayfa */}
                     <Route index element={<Dashboard />} />
 

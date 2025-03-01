@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from "react";
+import React, { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { MessageSquare, Send } from "lucide-react";
 import { MessageItem } from "../MessageItem";
 import { ConversationList } from "../ConversationList";
@@ -9,8 +9,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
 import { useActiveConversation } from "@/store/messaging";
-import { Message } from "@/store/messaging"; // Correct import path
+import { Message, Conversation } from "@/store/messaging"; // Correct import path for Message
 import { FixedSizeList } from 'react-window';
+import { plugins, Plugin } from '@/plugins'; // Correct import path for plugins and import Plugin interface
+import { loadPlugins } from '@/lib/plugin-loader'; // Import loadPlugins
 
 interface ChatViewProps {
   viewType?: 'chat' | 'groups';
@@ -18,7 +20,7 @@ interface ChatViewProps {
 
 const ROW_HEIGHT = 72; // Adjust based on MessageItem height
 
-const Row = ({ index, style, data }: { index: number, style: React.CSSProperties, data: Message[] }) => {
+const Row = ({ index, style, data }: { index: number; style: React.CSSProperties; data: Message[] }) => {
   const message: Message = data[index];
   return (
     <div style={style} key={message.id}>
@@ -30,52 +32,59 @@ const Row = ({ index, style, data }: { index: number, style: React.CSSProperties
   );
 };
 
-export const ChatView: React.FC<ChatViewProps> = React.memo(({ viewType = 'chat' }) => {
+export const ChatView: React.FC<ChatViewProps> = React.memo(({ viewType = 'chat' }: ChatViewProps): React.ReactElement | null => {
   const [newMessage, setNewMessage] = useState("");
   const { messages, isLoading, sendMessage } = useMessaging();
   const { conversation: activeConversation } = useActiveConversation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const currentUser = auth.currentUser;
 
+  useEffect(() => {
+    // Load plugins dynamically
+    loadPlugins().then(loadedPlugins => {
+      setTopPlugins(loadedPlugins.filter(plugin => plugin.location === 'chat-view-top'));
+      setBottomPlugins(loadedPlugins.filter(plugin => plugin.location === 'chat-view-bottom'));
+    });
+  }, []);
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !activeConversation || !currentUser) return;
+  const handleSendMessage = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (!newMessage.trim() || !activeConversation || !currentUser) return;
 
-    try {
-      await sendMessage(activeConversation.id, newMessage.trim());
-      setNewMessage("");
-      scrollToBottom();
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-  }, [newMessage, activeConversation, currentUser, sendMessage, scrollToBottom]);
+      try {
+        await sendMessage(activeConversation.id, newMessage.trim());
+        setNewMessage("");
+        scrollToBottom();
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
+    },
+    [newMessage, activeConversation, currentUser, sendMessage]
+  );
 
-  const renderMessageItem = useCallback((message: Message) => (
-    <MessageItem
-      key={message.id}
-      message={message}
-      isOwn={message.senderId === currentUser?.uid}
-    />
-  ), [currentUser?.uid]);
+  const renderMessageItem = useCallback(
+    (message: Message) => (
+      <MessageItem
+        key={message.id}
+        message={message}
+        isOwn={message.senderId === currentUser?.uid}
+      />
+    ),
+    [currentUser?.uid]
+  );
 
   const conversationList = useMemo(() => (
     <ConversationList viewType={viewType} />
   ), [viewType]);
 
-  if (!currentUser) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Lütfen giriş yapın</p>
-        </div>
-      </div>
-    );
-  }
+  // Plugin noktaları
+  const topPlugins = useMemo(() => plugins.filter((plugin: Plugin) => plugin.location === 'chat-view-top'), [plugins]);
+  const bottomPlugins = useMemo(() => plugins.filter((plugin: Plugin) => plugin.location === 'chat-view-bottom'), [plugins]);
 
   return (
     <div className="grid grid-cols-[320px_1fr] h-full">
@@ -102,6 +111,13 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({ viewType = 'chat'
           </div>
         ) : activeConversation ? (
           <>
+            {/* Plugin noktası - Sohbet penceresi üstü */}
+            <div className="p-4 flex gap-2">
+              {topPlugins.map((plugin: Plugin) => ( // Add type for plugin parameter
+                <plugin.component key={plugin.id} conversation={activeConversation} />
+              ))}
+            </div>
+
             <div className="border-b p-4">
               <h3 className="font-semibold">{activeConversation.name}</h3>
             </div>
@@ -118,6 +134,13 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({ viewType = 'chat'
               </FixedSizeList>
               <div ref={messagesEndRef} />
             </ScrollArea>
+
+            {/* Plugin noktası - Sohbet penceresi altı */}
+            <div className="p-4 flex gap-2">
+              {bottomPlugins.map((plugin: Plugin) => ( // Add type for plugin parameter
+                <plugin.component key={plugin.id} conversation={activeConversation} />
+              ))}
+            </div>
 
             <form onSubmit={handleSendMessage} className="p-4 border-t">
               <div className="flex items-center gap-2">
@@ -137,7 +160,7 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({ viewType = 'chat'
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Bir konuşma seçin</p>
+              <p className="text-muted-foreground">Lütfen giriş yapın</p>
             </div>
           </div>
         )}
@@ -145,3 +168,5 @@ export const ChatView: React.FC<ChatViewProps> = React.memo(({ viewType = 'chat'
     </div>
   );
 });
+
+export default ChatView;

@@ -1,9 +1,9 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useMessagingStore } from '@/store/messaging';
-import { 
-  subscribeToMessages, 
+import {
+  subscribeToMessages,
   subscribeToConversations,
-  sendMessage as apiSendMessage
+  sendMessageWithRetry
 } from '@/services/firestore/messaging';
 import { auth } from '@/lib/firebase';
 import { toast } from 'sonner';
@@ -106,10 +106,10 @@ export const useMessaging = () => {
     }
 
     try {
-      await apiSendMessage(conversationId, content, type);
+      await sendMessageWithRetry(conversationId, content, type);
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Mesaj gönderilemedi');
+      toast.error('Mesaj gönderilemedi, tekrar deneniyor...');
       throw error;
     }
   }, []);

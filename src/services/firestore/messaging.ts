@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import type { Message, Conversation } from '@/store/messaging';
+import { retryOperation } from './index'; // Import retryOperation
 
 // Firestore koleksiyon referansları
 const MESSAGES_COLLECTION = 'messages';
@@ -98,8 +99,17 @@ export const sendMessage = async (
     lastMessageTimestamp: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
-
   return messageRef.id;
+};
+
+export const sendMessageWithRetry = async (
+  conversationId: string,
+  content: string,
+  type: Message['type'] = 'text'
+): Promise<string> => {
+  return retryOperation(async () => {
+    return sendMessage(conversationId, content, type);
+  });
 };
 
 // Konuşma İşlemleri
@@ -149,6 +159,12 @@ export const createConversation = async (participants: string[]) => {
   return conversationRef.id;
 };
 
+export const createConversationWithRetry = async (participants: string[]): Promise<string> => {
+  return retryOperation(async () => {
+    return createConversation(participants);
+  });
+};
+
 export const updateConversation = async (
   conversationId: string,
   updates: Partial<Omit<Conversation, 'id'>>
@@ -157,6 +173,15 @@ export const updateConversation = async (
   await updateDoc(conversationRef, {
     ...updates,
     updatedAt: serverTimestamp(),
+  });
+};
+
+export const updateConversationWithRetry = async (
+  conversationId: string,
+  updates: Partial<Omit<Conversation, 'id'>>
+): Promise<void> => {
+  return retryOperation(async () => {
+    await updateConversation(conversationId, updates);
   });
 };
 
@@ -174,4 +199,10 @@ export const deleteConversation = async (conversationId: string) => {
   // Konuşmayı sil
   const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
   await deleteDoc(conversationRef);
+};
+
+export const deleteConversationWithRetry = async (conversationId: string): Promise<void> => {
+  return retryOperation(async () => {
+    await deleteConversation(conversationId);
+  });
 };

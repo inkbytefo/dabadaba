@@ -1,10 +1,27 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { TopNavigation } from './TopNavigation';
+import { Skeleton } from './ui/skeleton'; // Import Skeleton
+import { useTheme } from './ThemeProvider'; // Import useTheme hook
+import { cn } from '@/lib/utils';
 
-export const AppLayout: React.FC = () => {
+interface AppLayoutProps {
+  isLoading: boolean;
+}
+
+export const AppLayout: React.FC<AppLayoutProps> = ({ isLoading }) => {
+  const { theme } = useTheme(); // Use useTheme hook
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Skeleton className="h-16 w-16 rounded-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#1e1e1e] relative">
+    <div className={cn("min-h-screen relative", theme === 'dark' ? 'bg-[#1e1e1e] text-white' : 'bg-white text-black')}> {/* Apply theme styles */}
       {/* Dekoratif Arka Plan Efektleri */}
       <div className="fixed inset-0 z-0">
         {/* Sol üst köşe gradyanı */}
@@ -19,7 +36,6 @@ export const AppLayout: React.FC = () => {
 
       {/* İçerik Katmanı */}
       <div className="relative z-10">
-        {/* TopNavigation sabit kalıyor */}
         <TopNavigation />
         
         {/* İçerik alanı - pt-16 ile TopNavigation'ın altından başlıyor */}
